@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Select } from '@/components/ui/Select';
 import { Chart } from '@/components/ui/Chart';
-import { useReferential, usePromotions } from '@/lib/hooks/useStudentQueries';
+import { useReferential, usePromotions } from '@/lib/hooks/useEtudiantQueries';
 import { useGroupedByRecette } from '@/lib/hooks/useOperationsQueries';
 import { formatCurrency } from '@/lib/utils/format';
 import { useToast } from '@/components/ui/Toast';
@@ -50,7 +50,7 @@ export default function RecettesDashboardPage() {
   // Queries
   const antennasQuery = useReferential('antennes');
   const levelsQuery = useReferential('filieres');
-  const statutsQuery = useReferential('statuts-etudiants');
+  const statutsQuery = useReferential('statuts-etudiant');
   const typesFluxQuery = useReferential('types-flux');
   const typesRecettesQuery = useReferential('types-recettes');
   const nomenclaturesQuery = useReferential('nomenclatures');

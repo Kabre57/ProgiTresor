@@ -8,7 +8,7 @@ import type { ImportPayloadInput } from '../../../../../shared/types/transaction
 import { buildTransactionWhereClause } from '../utils/filterBuilder';
 import { prisma } from '../utils/prisma';
 import { invalidateKpiCache } from './kpiCacheService';
-import { fetchStudentJson, fetchStudentResult } from '../utils/studentServiceClient';
+import { fetchEtudiantJson, fetchEtudiantResult } from '../utils/etudiantServiceClient';
 
 const isPrismaError = (error: unknown): error is { code: string } => {
   return typeof error === 'object' && error !== null && 'code' in error;
@@ -31,8 +31,8 @@ export const importTransactions = async (payload: ImportPayloadInput): Promise<{
   const uniqueItems = Array.from(uniqueItemsMap.values());
   const fileDuplicatesCount = payload.items.length - uniqueItems.length;
 
-  // 2. Batch resolve students by distinct matricules (internal and external)
-  const studentMap = new Map<string, { id: number; antenneId: number }>();
+  // 2. Batch resolve etudiant by distinct matricules (internal and external)
+  const etudiantMap = new Map<string, { id: number; antenneId: number }>();
   const distinctMatricules = Array.from(
     new Set(
       uniqueItems
@@ -43,7 +43,7 @@ export const importTransactions = async (payload: ImportPayloadInput): Promise<{
 
   if (distinctMatricules.length > 0) {
     try {
-      const students = await fetchStudentJson<any[]>('/batch', {
+      const etudiant = await fetchEtudiantJson<any[]>('/batch', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -51,22 +51,22 @@ export const importTransactions = async (payload: ImportPayloadInput): Promise<{
         },
         body: JSON.stringify({ matricules: distinctMatricules }),
       }, []);
-      if (Array.isArray(students)) {
-        for (const s of students) {
+      if (Array.isArray(etudiant)) {
+        for (const s of etudiant) {
           const resolvedVal = { id: s.id, antenneId: s.antenneId };
-          if (s.matricule) studentMap.set(s.matricule.toUpperCase(), resolvedVal);
-          if (s.matriculeTresorPay) studentMap.set(s.matriculeTresorPay.toUpperCase(), resolvedVal);
+          if (s.matricule) etudiantMap.set(s.matricule.toUpperCase(), resolvedVal);
+          if (s.matriculeTresorPay) etudiantMap.set(s.matriculeTresorPay.toUpperCase(), resolvedVal);
         }
       }
     } catch (err) {
-      logger.warn(err, 'Failed to resolve students in batch');
+      logger.warn(err, 'Failed to resolve etudiant in batch');
     }
   }
 
   // 3. Fetch all nomenclatures to resolve by libelle
   const nomenclatureMap = new Map<string, { id: number; typeFluxId: number }>();
   try {
-    const noms = await fetchStudentJson<any[]>('/nomenclatures', {
+    const noms = await fetchEtudiantJson<any[]>('/nomenclatures', {
       headers: {
         'Accept': 'application/json',
       },
@@ -110,21 +110,21 @@ export const importTransactions = async (payload: ImportPayloadInput): Promise<{
 
       const matCandidate = (item.matriculeTresorPay || (item as any).matricule || item.etudiantMatricule || '').trim();
       if (!etudiantId && matCandidate) {
-        if (studentMap.has(matCandidate.toUpperCase())) {
-          const resolved = studentMap.get(matCandidate.toUpperCase())!;
+        if (etudiantMap.has(matCandidate.toUpperCase())) {
+          const resolved = etudiantMap.get(matCandidate.toUpperCase())!;
           etudiantId = resolved.id;
           if (!antenneId) antenneId = resolved.antenneId;
         } else {
           // Si non trouvé dans le batch initial, tenter une résolution par matricule externe (création temporaire)
           try {
-            const res = await fetchStudentResult<any | null>(`/tresor-pay/${encodeURIComponent(matCandidate)}`, undefined, null);
+            const res = await fetchEtudiantResult<any | null>(`/tresor-pay/${encodeURIComponent(matCandidate)}`, undefined, null);
             if (res.ok && res.data) {
-              const student = res.data;
-              etudiantId = student.id;
-              if (!antenneId) antenneId = student.antenneId;
-              studentMap.set(matCandidate.toUpperCase(), { id: student.id, antenneId: student.antenneId });
+              const etudiant = res.data;
+              etudiantId = etudiant.id;
+              if (!antenneId) antenneId = etudiant.antenneId;
+              etudiantMap.set(matCandidate.toUpperCase(), { id: etudiant.id, antenneId: etudiant.antenneId });
             } else if (res.status === 404) {
-              const createRes = await fetchStudentResult<any | null>('/tresor-pay/temporary', {
+              const createRes = await fetchEtudiantResult<any | null>('/tresor-pay/temporary', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -133,10 +133,10 @@ export const importTransactions = async (payload: ImportPayloadInput): Promise<{
                 })
               }, null);
               if (createRes.ok && createRes.data) {
-                const tempStudent = createRes.data;
-                etudiantId = tempStudent.id;
-                if (!antenneId) antenneId = tempStudent.antenneId;
-                studentMap.set(matCandidate.toUpperCase(), { id: tempStudent.id, antenneId: tempStudent.antenneId });
+                const tempEtudiant = createRes.data;
+                etudiantId = tempEtudiant.id;
+                if (!antenneId) antenneId = tempEtudiant.antenneId;
+                etudiantMap.set(matCandidate.toUpperCase(), { id: tempEtudiant.id, antenneId: tempEtudiant.antenneId });
               }
             }
           } catch (err) {
@@ -241,7 +241,7 @@ export const getTransactions = async (query: any) => {
   };
 
   // Cross-service resolution
-  const studentMap = new Map<number, any>();
+  const etudiantMap = new Map<number, any>();
   const nomenclatureMap = new Map<number, any>();
 
   const etudiantIds = Array.from(new Set(list.map(tx => tx.etudiantId).filter((id): id is number => id !== null)));
@@ -249,24 +249,24 @@ export const getTransactions = async (query: any) => {
 
   if (etudiantIds.length > 0) {
     try {
-      const students = await fetchStudentJson<any[]>('/batch-ids', {
+      const etudiant = await fetchEtudiantJson<any[]>('/batch-ids', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids: etudiantIds })
       }, []);
-      if (Array.isArray(students)) {
-        for (const s of students) {
-          studentMap.set(s.id, s);
+      if (Array.isArray(etudiant)) {
+        for (const s of etudiant) {
+          etudiantMap.set(s.id, s);
         }
       }
     } catch (err) {
-      logger.warn(err, 'Failed to batch lookup students by IDs in getTransactions');
+      logger.warn(err, 'Failed to batch lookup etudiant by IDs in getTransactions');
     }
   }
 
   if (nomenclatureIds.length > 0) {
     try {
-      const noms = await fetchStudentJson<any[]>('/nomenclatures', undefined, []);
+      const noms = await fetchEtudiantJson<any[]>('/nomenclatures', undefined, []);
       if (Array.isArray(noms)) {
         for (const n of noms) {
           nomenclatureMap.set(n.id, n);
@@ -280,7 +280,7 @@ export const getTransactions = async (query: any) => {
   const enrichedList = list.map(tx => ({
     ...tx,
     montant: Number(tx.montant),
-    student: tx.etudiantId ? studentMap.get(tx.etudiantId) || null : null,
+    etudiant: tx.etudiantId ? etudiantMap.get(tx.etudiantId) || null : null,
     nomenclature: tx.nomenclatureId ? nomenclatureMap.get(tx.nomenclatureId) || null : null
   }));
 
@@ -331,9 +331,9 @@ export const deleteTransaction = async (id: number) => {
   return transaction;
 };
 
-export const mergeStudents = async (oldStudentId: number, newStudentId: number) => {
-  const count = await transactionRepository.updateTransactionsStudentId(oldStudentId, newStudentId);
+export const mergeEtudiants = async (oldEtudiantId: number, newEtudiantId: number) => {
+  const count = await transactionRepository.updateTransactionsEtudiantId(oldEtudiantId, newEtudiantId);
   await invalidateKpiCache();
-  logger.info({ oldStudentId, newStudentId, count }, 'Merged student transactions');
+  logger.info({ oldEtudiantId, newEtudiantId, count }, 'Merged etudiant transactions');
   return count;
 };

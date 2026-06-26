@@ -2,7 +2,7 @@ import * as orderRepository from '../repositories/orderRepository';
 import * as syntheseRepository from '../repositories/syntheseRepository';
 import redisClient from '../utils/redis';
 import { http, TRANSACTION_SERVICE_URL } from '../utils/httpClient';
-import { fetchStudentJson } from '../utils/studentServiceClient';
+import { fetchEtudiantJson } from '../utils/etudiantServiceClient';
 import { sagaSuccessCounter, sagaRollbackCounter } from '../utils/metrics';
 import logger from '../utils/logger';
 
@@ -18,7 +18,7 @@ interface TransactionData {
   libelleProduitBrut: string | null;
 }
 
-interface StudentInfo {
+interface EtudiantInfo {
   id: number;
   filiereId: number;
   antenneId: number;
@@ -49,8 +49,8 @@ export class SagaCoordinator {
   private createdOpCodes: string[] = [];
   private linkedTransactions: { ordrePaiementId: number; txIds: number[] }[] = [];
 
-  // Caches for resolved student and nomenclature data
-  private studentCache: Map<number, StudentInfo> = new Map();
+  // Caches for resolved etudiant and nomenclature data
+  private etudiantCache: Map<number, EtudiantInfo> = new Map();
   private nomenclatureCache: Map<number, NomenclatureInfo> = new Map();
 
   constructor(private readonly auteurId: number) {
@@ -58,33 +58,33 @@ export class SagaCoordinator {
   }
 
   /**
-   * Resolve the filiereId for a given etudiantId by querying student-service.
+   * Resolve the filiereId for a given etudiantId by querying etudiant-service.
    * Results are cached to avoid redundant calls.
    */
-  private async resolveStudentFiliereId(etudiantId: number): Promise<number> {
-    if (this.studentCache.has(etudiantId)) {
-      return this.studentCache.get(etudiantId)!.filiereId;
+  private async resolveEtudiantFiliereId(etudiantId: number): Promise<number> {
+    if (this.etudiantCache.has(etudiantId)) {
+      return this.etudiantCache.get(etudiantId)!.filiereId;
     }
 
     try {
-      const students = await fetchStudentJson<StudentInfo[]>('/batch-ids', {
+      const etudiant = await fetchEtudiantJson<EtudiantInfo[]>('/batch-ids', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids: [etudiantId] }),
       }, []);
-      if (Array.isArray(students) && students.length > 0) {
-        const student = students[0];
-        this.studentCache.set(etudiantId, student);
-        return student.filiereId ?? 1;
+      if (Array.isArray(etudiant) && etudiant.length > 0) {
+        const etudiant = etudiant[0];
+        this.etudiantCache.set(etudiantId, etudiant);
+        return etudiant.filiereId ?? 1;
       }
     } catch (err) {
-      logger.warn({ etudiantId, err }, 'Failed to resolve student filiereId, using default');
+      logger.warn({ etudiantId, err }, 'Failed to resolve etudiant filiereId, using default');
     }
     return 1; // default fallback
   }
 
   /**
-   * Resolve the typeRecetteId for a given nomenclatureId by querying student-service.
+   * Resolve the typeRecetteId for a given nomenclatureId by querying etudiant-service.
    * Results are cached to avoid redundant calls.
    */
   private async resolveNomenclatureTypeRecetteId(nomenclatureId: number): Promise<{ typeRecetteId: number; libelle: string }> {
@@ -94,7 +94,7 @@ export class SagaCoordinator {
     }
 
     try {
-      const nomenclature = await fetchStudentJson<NomenclatureInfo | null>(`/nomenclatures/${nomenclatureId}`, undefined, null);
+      const nomenclature = await fetchEtudiantJson<NomenclatureInfo | null>(`/nomenclatures/${nomenclatureId}`, undefined, null);
       if (nomenclature && nomenclature.typeRecetteId) {
         this.nomenclatureCache.set(nomenclatureId, nomenclature);
         return { typeRecetteId: nomenclature.typeRecetteId, libelle: nomenclature.libelleStandard ?? 'FRAIS ANNEXES' };
@@ -106,19 +106,19 @@ export class SagaCoordinator {
   }
 
   /**
-   * Pre-fetch all unique student and nomenclature data in bulk to minimize API calls.
+   * Pre-fetch all unique etudiant and nomenclature data in bulk to minimize API calls.
    */
   private async prefetchResolutionData(transactions: TransactionData[]): Promise<void> {
     // Collect unique etudiantIds and nomenclatureIds
     const etudiantIds = [...new Set(transactions.map(tx => tx.etudiantId).filter((id): id is number => id !== null))];
     const nomenclatureIds = [...new Set(transactions.map(tx => tx.nomenclatureId).filter((id): id is number => id !== null))];
 
-    // Prefetch students in parallel (using list endpoint with IDs)
-    const studentPromises = etudiantIds.map(async (id) => {
+    // Prefetch etudiant in parallel (using list endpoint with IDs)
+    const etudiantPromises = etudiantIds.map(async (id) => {
       try {
-        await this.resolveStudentFiliereId(id);
+        await this.resolveEtudiantFiliereId(id);
       } catch {
-        // Errors already logged in resolveStudentFiliereId
+        // Errors already logged in resolveEtudiantFiliereId
       }
     });
 
@@ -131,10 +131,10 @@ export class SagaCoordinator {
       }
     });
 
-    await Promise.allSettled([...studentPromises, ...nomenclaturePromises]);
+    await Promise.allSettled([...etudiantPromises, ...nomenclaturePromises]);
     logger.info({
       sagaId: this.sagaId,
-      studentsResolved: this.studentCache.size,
+      etudiantResolved: this.etudiantCache.size,
       nomenclaturesResolved: this.nomenclatureCache.size,
     }, 'Prefetch resolution data completed');
   }
@@ -160,9 +160,9 @@ export class SagaCoordinator {
       for (const tx of transactions) {
         const antenneId = tx.antenneId ?? 1;
 
-        // Resolve actual filiereId from student data instead of using etudiantId
+        // Resolve actual filiereId from etudiant data instead of using etudiantId
         const filiereId = tx.etudiantId
-          ? await this.resolveStudentFiliereId(tx.etudiantId)
+          ? await this.resolveEtudiantFiliereId(tx.etudiantId)
           : 1;
 
         // Resolve actual typeRecetteId from nomenclature data instead of using nomenclatureId

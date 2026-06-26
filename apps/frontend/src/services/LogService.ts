@@ -8,7 +8,7 @@ export async function apiGetLogs<T, U extends Record<string, unknown>>(params: U
         date: Date.now() - 3600000,
         events: [
           {
-            type: 'ADD_STUDENT',
+            type: 'ADD_ETUDIANT',
             dateTime: Date.now() - 3600000,
             userName: 'Theo Kabre',
             comment: 'A créé la fiche de l\'étudiant KOUAME Affoue Marie.',

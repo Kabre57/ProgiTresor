@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateTransactionsStudentId = exports.deleteTransaction = exports.updateTransaction = exports.unlinkTransactionsFromOp = exports.findAlreadyLinkedTransaction = exports.linkTransactionsToOp = exports.createTransaction = exports.findUnassignedHorsBudget = exports.countTransactions = exports.findTransactions = void 0;
+exports.updateTransactionsEtudiantId = exports.deleteTransaction = exports.updateTransaction = exports.unlinkTransactionsFromOp = exports.findAlreadyLinkedTransaction = exports.linkTransactionsToOp = exports.createTransaction = exports.findUnassignedHorsBudget = exports.countTransactions = exports.findTransactions = void 0;
 const prisma_1 = require("../utils/prisma");
 const metrics_1 = require("../utils/metrics");
 const findTransactions = async (limit, offset, where = {}, sortBy = 'dateHeure', sortOrder = 'desc') => {
@@ -137,12 +137,12 @@ const deleteTransaction = async (id) => {
     }
 };
 exports.deleteTransaction = deleteTransaction;
-const updateTransactionsStudentId = async (oldStudentId, newStudentId) => {
-    const end = metrics_1.dbQueryDuration.startTimer({ operation: 'transaction_merge_students' });
+const updateTransactionsEtudiantId = async (oldEtudiantId, newEtudiantId) => {
+    const end = metrics_1.dbQueryDuration.startTimer({ operation: 'transaction_merge_etudiant' });
     try {
         const result = await prisma_1.prisma.transaction.updateMany({
-            where: { etudiantId: oldStudentId },
-            data: { etudiantId: newStudentId }
+            where: { etudiantId: oldEtudiantId },
+            data: { etudiantId: newEtudiantId }
         });
         return result.count;
     }
@@ -150,4 +150,4 @@ const updateTransactionsStudentId = async (oldStudentId, newStudentId) => {
         end();
     }
 };
-exports.updateTransactionsStudentId = updateTransactionsStudentId;
+exports.updateTransactionsEtudiantId = updateTransactionsEtudiantId;

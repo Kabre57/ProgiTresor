@@ -7,7 +7,7 @@ import type { NavigationTree } from '@/@types/navigation'
 
 const adminRoles = ['ADMIN', 'Administrateur']
 const accountingRoles = ['ADMIN', 'COMPTABLE', 'CHEF_COMPTABLE', 'DF', 'Administrateur', 'Comptable', 'Chef Comptable', 'Directeur Financier']
-const studentRoles = ['ADMIN', 'COMPTABLE', 'CONSULTANT', 'Administrateur', 'Comptable', 'Consultant']
+const etudiantRoles = ['ADMIN', 'COMPTABLE', 'CONSULTANT', 'Administrateur', 'Comptable', 'Consultant']
 
 const navigationConfig: NavigationTree[] = [
     {
@@ -52,7 +52,7 @@ const navigationConfig: NavigationTree[] = [
         ],
     },
     {
-        key: 'etudiantsGroup',
+        key: 'etudiantGroup',
         path: '',
         title: 'Étudiants',
         translateKey: '',
@@ -61,23 +61,23 @@ const navigationConfig: NavigationTree[] = [
         authority: [],
         subMenu: [
             {
-                key: 'students.list',
-                path: '/students',
+                key: 'etudiant.list',
+                path: '/etudiant',
                 title: 'Fiches étudiants',
                 translateKey: '',
-                icon: 'students',
+                icon: 'etudiant',
                 type: NAV_ITEM_TYPE_ITEM,
-                authority: studentRoles,
+                authority: etudiantRoles,
                 subMenu: [],
             },
             {
-                key: 'students.promotions',
-                path: '/students/promotions',
+                key: 'etudiant.promotions',
+                path: '/etudiant/promotions',
                 title: 'Réf. Promotions',
                 translateKey: '',
                 icon: 'promotions',
                 type: NAV_ITEM_TYPE_ITEM,
-                authority: studentRoles,
+                authority: etudiantRoles,
                 subMenu: [],
             },
         ],
@@ -148,7 +148,7 @@ const navigationConfig: NavigationTree[] = [
                 translateKey: '',
                 icon: 'referentials',
                 type: NAV_ITEM_TYPE_COLLAPSE,
-                authority: studentRoles,
+                authority: etudiantRoles,
                 subMenu: [
                     {
                         key: 'admin.referentials.promotions',
@@ -167,7 +167,7 @@ const navigationConfig: NavigationTree[] = [
                         translateKey: '',
                         icon: '',
                         type: NAV_ITEM_TYPE_ITEM,
-                        authority: studentRoles,
+                        authority: etudiantRoles,
                         subMenu: [],
                     },
                     {
@@ -177,7 +177,7 @@ const navigationConfig: NavigationTree[] = [
                         translateKey: '',
                         icon: '',
                         type: NAV_ITEM_TYPE_ITEM,
-                        authority: studentRoles,
+                        authority: etudiantRoles,
                         subMenu: [],
                     },
                     {
@@ -187,7 +187,7 @@ const navigationConfig: NavigationTree[] = [
                         translateKey: '',
                         icon: '',
                         type: NAV_ITEM_TYPE_ITEM,
-                        authority: studentRoles,
+                        authority: etudiantRoles,
                         subMenu: [],
                     },
                     {
@@ -197,7 +197,7 @@ const navigationConfig: NavigationTree[] = [
                         translateKey: '',
                         icon: '',
                         type: NAV_ITEM_TYPE_ITEM,
-                        authority: studentRoles,
+                        authority: etudiantRoles,
                         subMenu: [],
                     },
                     {
@@ -207,7 +207,7 @@ const navigationConfig: NavigationTree[] = [
                         translateKey: '',
                         icon: '',
                         type: NAV_ITEM_TYPE_ITEM,
-                        authority: studentRoles,
+                        authority: etudiantRoles,
                         subMenu: [],
                     },
                     {
@@ -217,7 +217,7 @@ const navigationConfig: NavigationTree[] = [
                         translateKey: '',
                         icon: '',
                         type: NAV_ITEM_TYPE_ITEM,
-                        authority: studentRoles,
+                        authority: etudiantRoles,
                         subMenu: [],
                     },
                 ],

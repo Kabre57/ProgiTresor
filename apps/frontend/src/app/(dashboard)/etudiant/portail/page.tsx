@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { useToast } from '@/components/ui/Toast';
 import { getErrorMessage } from '@/lib/api/client';
-import { useStudentMe, useMapTresorPay } from '@/lib/hooks/useStudentQueries';
+import { useEtudiantMe, useMapTresorPay } from '@/lib/hooks/useEtudiantQueries';
 import { Spinner } from '@/components/ui/Spinner';
 
 const mappingSchema = z.object({
@@ -22,9 +22,9 @@ const mappingSchema = z.object({
 
 type MappingInput = z.infer<typeof mappingSchema>;
 
-export default function StudentPortalPage() {
+export default function EtudiantPortalPage() {
   const toast = useToast();
-  const { data: student, isLoading, refetch } = useStudentMe();
+  const { data: etudiant, isLoading, refetch } = useEtudiantMe();
   const mapTresorPay = useMapTresorPay();
 
   const {
@@ -56,7 +56,7 @@ export default function StudentPortalPage() {
     );
   }
 
-  if (!student) {
+  if (!etudiant) {
     return (
       <div className="p-6 text-center">
         <Card className="max-w-md mx-auto border-rose-500/20 bg-rose-50/5 dark:bg-rose-950/5">
@@ -94,23 +94,23 @@ export default function StudentPortalPage() {
           <CardContent className="pt-6 space-y-4 relative z-10">
             <div>
               <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Nom complet</label>
-              <p className="text-base font-bold text-white mt-0.5">{student.nom} {student.prenom}</p>
+              <p className="text-base font-bold text-white mt-0.5">{etudiant.nom} {etudiant.prenom}</p>
             </div>
             <div>
               <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Matricule interne</label>
-              <p className="text-base font-semibold text-slate-200 mt-0.5">{student.matricule}</p>
+              <p className="text-base font-semibold text-slate-200 mt-0.5">{etudiant.matricule}</p>
             </div>
             <div>
               <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Antenne</label>
-              <p className="text-sm text-slate-300 mt-0.5">{student.antenne?.nom || '-'}</p>
+              <p className="text-sm text-slate-300 mt-0.5">{etudiant.antenne?.nom || '-'}</p>
             </div>
             <div>
               <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Filières</label>
-              <p className="text-sm text-slate-300 mt-0.5">{student.filiere?.libelle || '-'}</p>
+              <p className="text-sm text-slate-300 mt-0.5">{etudiant.filiere?.libelle || '-'}</p>
             </div>
             <div>
               <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Statut</label>
-              <p className="text-sm text-slate-300 mt-0.5">{student.statut?.libelle || '-'}</p>
+              <p className="text-sm text-slate-300 mt-0.5">{etudiant.statut?.libelle || '-'}</p>
             </div>
           </CardContent>
         </Card>
@@ -148,7 +148,7 @@ export default function StudentPortalPage() {
                     type="text"
                     placeholder="Saisissez votre matricule externe (ex: TP-XXXXXX)"
                     className="pl-10 bg-slate-950/60 border-slate-800 text-white focus:border-amber-500 focus:ring-amber-500"
-                    defaultValue={student.matriculeTresorPay || ''}
+                    defaultValue={etudiant.matriculeTresorPay || ''}
                     {...register('matriculeTresorPay')}
                   />
                 </div>
@@ -157,10 +157,10 @@ export default function StudentPortalPage() {
                 )}
               </div>
 
-              {student.matriculeTresorPay ? (
+              {etudiant.matriculeTresorPay ? (
                 <div className="flex items-center gap-2 text-emerald-500 text-xs font-semibold py-1">
                   <span>✓ Matricule actuellement configuré : </span>
-                  <span className="px-2 py-0.5 rounded bg-emerald-500/10 font-mono border border-emerald-500/20">{student.matriculeTresorPay}</span>
+                  <span className="px-2 py-0.5 rounded bg-emerald-500/10 font-mono border border-emerald-500/20">{etudiant.matriculeTresorPay}</span>
                 </div>
               ) : (
                 <div className="text-amber-500 text-xs font-semibold py-1">

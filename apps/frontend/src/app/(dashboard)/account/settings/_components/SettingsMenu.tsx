@@ -2,7 +2,7 @@
 
 import Menu from '@/components/ui/Menu'
 import ScrollBar from '@/components/ui/ScrollBar'
-import { useSettingsStore } from '../_store/settingsStore'
+import { useSettingsStore } from '.@/lib/store/etudiant/settingsStore'
 
 import {
     TbUserSquare,

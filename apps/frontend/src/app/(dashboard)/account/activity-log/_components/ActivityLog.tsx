@@ -14,7 +14,7 @@ import {
     ADD_FILES_TO_TICKET,
     CREATE_TICKET,
 } from '@/components/view/Activity/constants'
-import { useActivityLog } from '../_store/activityLogStore'
+import { useActivityLog } from '.@/lib/store/etudiant/activityLogStore'
 import type { GetActivityLogResponse } from '../types'
 
 const defaultSelectedType = [

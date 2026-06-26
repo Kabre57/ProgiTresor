@@ -6,7 +6,7 @@ import { Transaction } from '@prisma/client/index';
 import { buildKpiCacheKey, getCachedKpis, setCachedKpis } from '../services/kpiCacheService';
 import { Transform } from 'stream';
 import { once } from 'events';
-import { fetchStudentJson } from '../utils/studentServiceClient';
+import { fetchEtudiantJson } from '../utils/etudiantServiceClient';
 
 const escapeCsvValue = (value: string) => {
   if (value.includes(',') || value.includes('"') || value.includes('\n')) {
@@ -64,10 +64,10 @@ export const getKpis = async (req: Request, res: Response, next: NextFunction): 
       }
     }
 
-    // Récupérer les nomenclatures depuis student-service
+    // Récupérer les nomenclatures depuis etudiant-service
     const nomMap = new Map<number, { libelleStandard: string; type: string }>();
     try {
-      const nomenclatures = await fetchStudentJson<any[]>('/nomenclatures', undefined, []);
+      const nomenclatures = await fetchEtudiantJson<any[]>('/nomenclatures', undefined, []);
       if (Array.isArray(nomenclatures)) {
         for (const nom of nomenclatures) {
           const typeStr =
@@ -80,7 +80,7 @@ export const getKpis = async (req: Request, res: Response, next: NextFunction): 
         }
       }
     } catch (err) {
-      logger.warn(err, 'Failed to fetch nomenclatures from student-service');
+      logger.warn(err, 'Failed to fetch nomenclatures from etudiant-service');
     }
 
     const grouped = await prisma.transaction.groupBy({
@@ -155,9 +155,9 @@ export const exportTransactions = async (req: Request, res: Response, next: Next
 
     try {
       const [antennes, flux, nomenclatures] = await Promise.all([
-        fetchStudentJson<any[]>('/antennes', undefined, []),
-        fetchStudentJson<any[]>('/types-flux', undefined, []),
-        fetchStudentJson<any[]>('/nomenclatures', undefined, [])
+        fetchEtudiantJson<any[]>('/antennes', undefined, []),
+        fetchEtudiantJson<any[]>('/types-flux', undefined, []),
+        fetchEtudiantJson<any[]>('/nomenclatures', undefined, [])
       ]);
 
       if (Array.isArray(antennes)) {
@@ -220,39 +220,39 @@ export const exportTransactions = async (req: Request, res: Response, next: Next
 
       if (transactions.length === 0) break;
 
-      // Batch resolve student IDs for this chunk
-      const studentIds = Array.from(
+      // Batch resolve etudiant IDs for this chunk
+      const etudiantIds = Array.from(
         new Set(
           transactions
             .map((t: Transaction) => t.etudiantId)
             .filter((id: number | null): id is number => id !== null)
         )
       );
-      const studentMap = new Map<number, any>();
-      if (studentIds.length > 0) {
+      const etudiantMap = new Map<number, any>();
+      if (etudiantIds.length > 0) {
         try {
-          const students = await fetchStudentJson<any[]>('/batch-ids', {
+          const etudiant = await fetchEtudiantJson<any[]>('/batch-ids', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ids: studentIds }),
+            body: JSON.stringify({ ids: etudiantIds }),
           }, []);
-          for (const s of students) {
-            studentMap.set(s.id, s);
+          for (const s of etudiant) {
+            etudiantMap.set(s.id, s);
           }
         } catch (err) {
-          logger.warn(err, 'Failed to batch fetch students from student-service during export batch');
+          logger.warn(err, 'Failed to batch fetch etudiant from etudiant-service during export batch');
         }
       }
 
       for (const tx of transactions) {
-        const student = tx.etudiantId ? studentMap.get(tx.etudiantId) : null;
-        const studentName = student
-          ? `${student.matricule} - ${student.nom} ${student.prenom}`
+        const etudiant = tx.etudiantId ? etudiantMap.get(tx.etudiantId) : null;
+        const etudiantName = etudiant
+          ? `${etudiant.matricule} - ${etudiant.nom} ${etudiant.prenom}`
           : tx.etudiantId
           ? `ID: ${tx.etudiantId}`
           : '';
         const antenneName = tx.antenneId
-          ? antenneMap.get(tx.antenneId) || student?.antenne?.nom || `ID: ${tx.antenneId}`
+          ? antenneMap.get(tx.antenneId) || etudiant?.antenne?.nom || `ID: ${tx.antenneId}`
           : '';
         const nomenclatureLibelle = tx.nomenclatureId
           ? nomenclatureMap.get(tx.nomenclatureId) || `ID: ${tx.nomenclatureId}`
@@ -266,8 +266,8 @@ export const exportTransactions = async (req: Request, res: Response, next: Next
           tx.refTresor,
           tx.dateHeure.toISOString(),
           Number(tx.montant).toString(),
-          studentName,
-          student?.promotionString || student?.promotion?.nom || '',
+          etudiantName,
+          etudiant?.promotionString || etudiant?.promotion?.nom || '',
           antenneName,
           nomenclatureLibelle,
           typeFluxLibelle,
@@ -293,10 +293,10 @@ export const getGroupedByRecette = async (req: Request, res: Response, next: Nex
   try {
     const where = await buildTransactionWhereClause(req.query);
 
-    // Fetch nomenclatures from student-service
+    // Fetch nomenclatures from etudiant-service
     const nomMap = new Map<number, { libelleStandard: string; typeRecetteLibelle: string; typeFluxId: number }>();
     try {
-      const nomenclatures = await fetchStudentJson<any[]>('/nomenclatures', undefined, []);
+      const nomenclatures = await fetchEtudiantJson<any[]>('/nomenclatures', undefined, []);
       if (Array.isArray(nomenclatures)) {
         for (const nom of nomenclatures) {
           nomMap.set(nom.id, {
@@ -307,7 +307,7 @@ export const getGroupedByRecette = async (req: Request, res: Response, next: Nex
         }
       }
     } catch (err) {
-      logger.warn(err, 'Failed to fetch nomenclatures from student-service');
+      logger.warn(err, 'Failed to fetch nomenclatures from etudiant-service');
     }
 
     const grouped = await prisma.transaction.groupBy({
@@ -392,10 +392,10 @@ export const exportSynthese = async (req: Request, res: Response, next: NextFunc
   try {
     const where = await buildTransactionWhereClause(req.query);
 
-    // Fetch nomenclatures from student-service
+    // Fetch nomenclatures from etudiant-service
     const nomMap = new Map<number, { libelleStandard: string; typeRecetteLibelle: string; typeFluxId: number }>();
     try {
-      const nomenclatures = await fetchStudentJson<any[]>('/nomenclatures', undefined, []);
+      const nomenclatures = await fetchEtudiantJson<any[]>('/nomenclatures', undefined, []);
       if (Array.isArray(nomenclatures)) {
         for (const nom of nomenclatures) {
           nomMap.set(nom.id, {
@@ -406,7 +406,7 @@ export const exportSynthese = async (req: Request, res: Response, next: NextFunc
         }
       }
     } catch (err) {
-      logger.warn(err, 'Failed to fetch nomenclatures from student-service');
+      logger.warn(err, 'Failed to fetch nomenclatures from etudiant-service');
     }
 
     const grouped = await prisma.transaction.groupBy({

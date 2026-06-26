@@ -2,7 +2,7 @@
 
 import { Badge } from '@/components/ui/Badge';
 import { ReferentialPage } from '@/components/referentials/ReferentialPage';
-import type { TypeFlux } from '@/types/student.types';
+import type { TypeFlux } from '@/types/etudiant.types';
 
 export default function TypesFluxPage() {
   return (

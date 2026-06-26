@@ -13,7 +13,7 @@ import { Select } from '@/components/ui/Select';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
 import { getErrorMessage } from '@/lib/api/client';
-import { studentApi, type ReferentialEndpoint } from '@/lib/api/studentApi';
+import { etudiantApi, type ReferentialEndpoint } from '@/lib/api/etudiantApi';
 
 export type ReferentialRecord = {
   id: number;
@@ -83,15 +83,15 @@ export function ReferentialPage<T extends ReferentialRecord>({
   const [itemToDelete, setItemToDelete] = useState<T | null>(null);
 
   const query = useQuery({
-    queryKey: ['student', 'referential', endpoint],
-    queryFn: () => studentApi.listReferential(endpoint),
+    queryKey: ['etudiant', 'referential', endpoint],
+    queryFn: () => etudiantApi.listReferential(endpoint),
   });
 
   const saveMutation = useMutation({
     mutationFn: (payload: Record<string, unknown>) =>
-      editing ? studentApi.updateReferential(endpoint, editing.id, payload) : studentApi.createReferential(endpoint, payload),
+      editing ? etudiantApi.updateReferential(endpoint, editing.id, payload) : etudiantApi.createReferential(endpoint, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['student', 'referential', endpoint] });
+      queryClient.invalidateQueries({ queryKey: ['etudiant', 'referential', endpoint] });
       toast.success(editing ? 'Élément modifié avec succès' : 'Élément créé avec succès');
     },
     onError: (err) => {
@@ -100,9 +100,9 @@ export function ReferentialPage<T extends ReferentialRecord>({
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => studentApi.deleteReferential(endpoint, id),
+    mutationFn: (id: number) => etudiantApi.deleteReferential(endpoint, id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['student', 'referential', endpoint] });
+      queryClient.invalidateQueries({ queryKey: ['etudiant', 'referential', endpoint] });
       toast.success('Élément supprimé avec succès');
     },
     onError: (err) => {

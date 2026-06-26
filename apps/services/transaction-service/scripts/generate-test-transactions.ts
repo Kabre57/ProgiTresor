@@ -33,8 +33,8 @@ const getMonthFr = (date: Date): string => {
   return MONTHS_FR[date.getMonth()];
 };
 
-// Hardcoded fallback data in case student-service is unreachable
-const fallbackStudents = [
+// Hardcoded fallback data in case etudiant-service is unreachable
+const fallbackEtudiants = [
   { id: 1, matricule: '21P-0154ASIB', nom: 'KOUAME', prenom: 'Affoue Marie', antenneId: 1 },
   { id: 2, matricule: '22P-0987BKE', nom: 'TRAORE', prenom: 'Bakary', antenneId: 5 },
   { id: 7, matricule: 'PM-1781818964346', nom: 'POSTMAN-UPDATED', prenom: 'Tester', antenneId: 6 },
@@ -61,36 +61,36 @@ async function main() {
     console.log('Database cleaned.');
   }
 
-  // 1. Resolve students and nomenclatures from student-service
-  let students = [...fallbackStudents];
+  // 1. Resolve etudiant and nomenclatures from etudiant-service
+  let etudiant = [...fallbackEtudiants];
   let nomenclatures = [...fallbackNomenclatures];
 
-  const studentServiceUrl = process.env.IS_DOCKER 
-    ? (process.env.STUDENT_SERVICE_URL || 'http://student-service:5002')
+  const etudiantServiceUrl = process.env.IS_DOCKER 
+    ? (process.env.ETUDIANT_SERVICE_URL || 'http://etudiant-service:5002')
     : 'http://localhost:5002';
 
-  console.log(`Attempting to fetch reference metadata from student-service at ${studentServiceUrl}...`);
+  console.log(`Attempting to fetch reference metadata from etudiant-service at ${etudiantServiceUrl}...`);
   try {
-    const studentsRes = await fetch(`${studentServiceUrl}/`);
-    if (studentsRes.ok) {
-      const data = await studentsRes.json() as any[];
+    const etudiantRes = await fetch(`${etudiantServiceUrl}/`);
+    if (etudiantRes.ok) {
+      const data = await etudiantRes.json() as any[];
       if (Array.isArray(data) && data.length > 0) {
-        students = data.map(s => ({
+        etudiant = data.map(s => ({
           id: s.id,
           matricule: s.matricule,
           nom: s.nom,
           prenom: s.prenom,
           antenneId: s.antenneId
         }));
-        console.log(`Successfully fetched ${students.length} students from student-service.`);
+        console.log(`Successfully fetched ${etudiant.length} etudiant from etudiant-service.`);
       }
     }
   } catch (err) {
-    console.warn('Could not fetch students from student-service, using fallback data.');
+    console.warn('Could not fetch etudiant from etudiant-service, using fallback data.');
   }
 
   try {
-    const nomsRes = await fetch(`${studentServiceUrl}/nomenclatures`);
+    const nomsRes = await fetch(`${etudiantServiceUrl}/nomenclatures`);
     if (nomsRes.ok) {
       const data = await nomsRes.json() as any[];
       if (Array.isArray(data) && data.length > 0) {
@@ -100,11 +100,11 @@ async function main() {
           libelleStandard: n.libelleStandard,
           typeFluxId: n.typeRecette?.typeFluxId || 1
         }));
-        console.log(`Successfully fetched ${nomenclatures.length} nomenclatures from student-service.`);
+        console.log(`Successfully fetched ${nomenclatures.length} nomenclatures from etudiant-service.`);
       }
     }
   } catch (err) {
-    console.warn('Could not fetch nomenclatures from student-service, using fallback data.');
+    console.warn('Could not fetch nomenclatures from etudiant-service, using fallback data.');
   }
 
   // 2. Create the ImportFichier record
@@ -127,7 +127,7 @@ async function main() {
   const now = new Date();
 
   for (let i = 1; i <= 10000; i++) {
-    const student = students[(i - 1) % students.length];
+    const etudiant = etudiant[(i - 1) % etudiant.length];
     const nom = nomenclatures[(i - 1) % nomenclatures.length];
 
     // Distribute date over the last 12 months (roughly 365 days)
@@ -141,14 +141,14 @@ async function main() {
       refTresor: `TR-2025-${i.toString().padStart(6, '0')}`,
       dateHeure: txDate,
       montant: montant,
-      etudiantId: student.id,
-      antenneId: student.antenneId,
+      etudiantId: etudiant.id,
+      antenneId: etudiant.antenneId,
       nomenclatureId: nom.id,
       typeFluxId: nom.typeFluxId,
       importId: importFichier.id,
       ordrePaiementId: null,
       mois: getMonthFr(txDate),
-      nomPayeurBrut: `${student.nom} ${student.prenom}`,
+      nomPayeurBrut: `${etudiant.nom} ${etudiant.prenom}`,
       libelleProduitBrut: nom.libelleBrut,
       statutTraitement: 'IMPORTE',
       gele: false,
@@ -172,7 +172,7 @@ async function main() {
   let csvContent = csvHeaders;
 
   for (let i = 1; i <= 10000; i++) {
-    const student = students[(i - 1) % students.length];
+    const etudiant = etudiant[(i - 1) % etudiant.length];
     const nom = nomenclatures[(i - 1) % nomenclatures.length];
     
     const daysOffset = Math.floor(Math.random() * 365);
@@ -180,7 +180,7 @@ async function main() {
     const montant = 10000 + Math.floor(Math.random() * 29) * 5000;
     const ref = `IMP-2025-${i.toString().padStart(6, '0')}`;
 
-    csvContent += `${ref},${txDate.toISOString()},${montant},${student.matricule},"${nom.libelleBrut}","${student.nom} ${student.prenom}"\n`;
+    csvContent += `${ref},${txDate.toISOString()},${montant},${etudiant.matricule},"${nom.libelleBrut}","${etudiant.nom} ${etudiant.prenom}"\n`;
   }
 
   const scratchDir = path.resolve(__dirname, '../scratch');

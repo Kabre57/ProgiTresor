@@ -1,6 +1,6 @@
 'use client'
 import { useEffect } from 'react'
-import { useActivityLog } from '../_store/activityLogStore'
+import { useActivityLog } from '.@/lib/store/etudiant/activityLogStore'
 import type { Activities } from '../types'
 import type { CommonProps } from '@/@types/common'
 

@@ -1,6 +1,6 @@
 import { Prisma } from '@prisma/client/index';
 import logger from './logger';
-import { fetchStudentJson } from './studentServiceClient';
+import { fetchEtudiantJson } from './etudiantServiceClient';
 
 const isPresent = (val: any): boolean => {
   if (val === undefined || val === null) return false;
@@ -83,8 +83,8 @@ export const buildTransactionWhereClause = async (query: any): Promise<Prisma.Tr
 
 
 
-  // 3. Student Service Filter Composition
-  const hasStudentFilters =
+  // 3. Etudiant Service Filter Composition
+  const hasEtudiantFilters =
     isPresent(etudiantMatricule) ||
     isPresent(etudiantNom) ||
     isPresent(promotion) ||
@@ -93,16 +93,16 @@ export const buildTransactionWhereClause = async (query: any): Promise<Prisma.Tr
     parsedFiliereIds !== undefined ||
     parsedStatutIds !== undefined;
 
-  if (hasStudentFilters) {
-    let studentSearch: string | undefined = undefined;
+  if (hasEtudiantFilters) {
+    let etudiantSearch: string | undefined = undefined;
     if (isPresent(etudiantMatricule)) {
-      studentSearch = etudiantMatricule as string;
+      etudiantSearch = etudiantMatricule as string;
     } else if (isPresent(etudiantNom)) {
-      studentSearch = etudiantNom as string;
+      etudiantSearch = etudiantNom as string;
     }
 
     const params = new URLSearchParams();
-    if (studentSearch) params.append('search', studentSearch);
+    if (etudiantSearch) params.append('search', etudiantSearch);
     if (parsedAntenneIds) params.append('antenneId', parsedAntenneIds.join(','));
     if (parsedFiliereIds) params.append('filiereId', parsedFiliereIds.join(','));
     if (parsedStatutIds) params.append('statutId', parsedStatutIds.join(','));
@@ -110,15 +110,15 @@ export const buildTransactionWhereClause = async (query: any): Promise<Prisma.Tr
     if (isPresent(promotionId)) params.append('promotionId', String(promotionId));
 
     try {
-      const students = await fetchStudentJson<any[]>(`/?${params.toString()}`, undefined, []);
-      if (Array.isArray(students)) {
-        const studentIds = students.map((s) => s.id);
-        where.etudiantId = { in: studentIds };
+      const etudiant = await fetchEtudiantJson<any[]>(`/?${params.toString()}`, undefined, []);
+      if (Array.isArray(etudiant)) {
+        const etudiantIds = etudiant.map((s) => s.id);
+        where.etudiantId = { in: etudiantIds };
       } else {
         where.etudiantId = { in: [] };
       }
     } catch (err) {
-      logger.warn(err, 'Failed to query student-service for transaction filtering');
+      logger.warn(err, 'Failed to query etudiant-service for transaction filtering');
       where.etudiantId = { in: [] };
     }
   }
@@ -126,7 +126,7 @@ export const buildTransactionWhereClause = async (query: any): Promise<Prisma.Tr
   // 4. Nomenclature / Type Recette resolution
   if (parsedTypeRecetteIds && !parsedNomenclatureIds) {
     try {
-      const noms = await fetchStudentJson<any[]>('/nomenclatures', undefined, []);
+      const noms = await fetchEtudiantJson<any[]>('/nomenclatures', undefined, []);
       if (Array.isArray(noms)) {
         const matchingNoms = noms.filter((nom) => {
           const trId = nom.typeRecetteId || nom.typeRecette?.id;

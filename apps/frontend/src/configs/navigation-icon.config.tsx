@@ -20,7 +20,7 @@ const navigationIcon: NavigationIcons = {
     dashboard: <PiSpeedometerDuotone />,
     transactions: <PiFileTextDuotone />,
     recettes: <PiChartPieSliceDuotone />,
-    students: <PiUserCircleDuotone />,
+    etudiant: <PiUserCircleDuotone />,
     promotions: <PiListChecksDuotone />,
     users: <PiUsersDuotone />,
     roles: <PiShieldCheckDuotone />,

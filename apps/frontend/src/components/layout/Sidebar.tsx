@@ -20,11 +20,11 @@ type SidebarProps = {
 export function Sidebar({ user, collapsed, open, onClose }: SidebarProps) {
   const pathname = usePathname();
   const roleCode = user?.role?.code;
-  const [etudiantsOpen, setEtudiantsOpen] = useState(false);
+  const [etudiantOpen, setEtudiantsOpen] = useState(false);
 
   // Auto-open submenu if pathname matches one of the sub-items
   useEffect(() => {
-    if (pathname.includes('/students') || pathname.includes('/admin/promotions') || pathname.includes('/admin/antennes') || pathname.includes('/admin/filieres') || pathname.includes('/admin/statuts') || pathname.includes('/admin/types-flux') || pathname.includes('/admin/types-recettes') || pathname.includes('/admin/nomenclatures')) {
+    if (pathname.includes('/etudiant') || pathname.includes('/admin/promotions') || pathname.includes('/admin/antennes') || pathname.includes('/admin/filieres') || pathname.includes('/admin/statuts') || pathname.includes('/admin/types-flux') || pathname.includes('/admin/types-recettes') || pathname.includes('/admin/nomenclatures')) {
       setEtudiantsOpen(true);
     }
   }, [pathname]);
@@ -100,7 +100,7 @@ export function Sidebar({ user, collapsed, open, onClose }: SidebarProps) {
                     <div className="group relative flex flex-col items-center">
                       <div className={cn(
                         'flex h-10 w-10 items-center justify-center rounded-xl transition duration-150 text-gray-100 hover:bg-slate-800 hover:text-white',
-                        (pathname.includes('/students') || pathname.includes('/admin/')) ? 'bg-blue-600/20 text-blue-400' : ''
+                        (pathname.includes('/etudiant') || pathname.includes('/admin/')) ? 'bg-blue-600/20 text-blue-400' : ''
                       )}>
                         <PiGraduationCapDuotone className="h-5 w-5" />
                       </div>
@@ -112,8 +112,8 @@ export function Sidebar({ user, collapsed, open, onClose }: SidebarProps) {
                         </div>
                         <div className="space-y-1">
                           {items.map((subItem) => {
-                            const subActive = subItem.href === '/students'
-                              ? (pathname === '/students' || (pathname.startsWith('/students/') && !pathname.startsWith('/students/promotions')))
+                            const subActive = subItem.href === '/etudiant'
+                              ? (pathname === '/etudiant' || (pathname.startsWith('/etudiant/') && !pathname.startsWith('/etudiant/promotions')))
                               : pathname === subItem.href || pathname.startsWith(`${subItem.href}/`);
                             return (
                               <Link
@@ -137,28 +137,28 @@ export function Sidebar({ user, collapsed, open, onClose }: SidebarProps) {
                     <div className="space-y-1">
                       <button
                         type="button"
-                        onClick={() => setEtudiantsOpen(!etudiantsOpen)}
+                        onClick={() => setEtudiantsOpen(!etudiantOpen)}
                         className={cn(
                           'flex w-full h-10 items-center justify-between rounded-xl px-3 text-sm font-medium transition duration-150',
-                          etudiantsOpen ? 'text-white font-semibold' : 'text-gray-100 hover:bg-slate-800 hover:text-white'
+                          etudiantOpen ? 'text-white font-semibold' : 'text-gray-100 hover:bg-slate-800 hover:text-white'
                         )}
                       >
                         <div className="flex items-center gap-3">
-                          <PiGraduationCapDuotone className={cn('h-4.5 w-4.5 shrink-0', etudiantsOpen ? 'text-blue-400' : 'text-slate-400')} />
+                          <PiGraduationCapDuotone className={cn('h-4.5 w-4.5 shrink-0', etudiantOpen ? 'text-blue-400' : 'text-slate-400')} />
                           <span>{group.label}</span>
                         </div>
-                        <ChevronDown className={cn('h-4 w-4 transition-transform duration-200', etudiantsOpen && 'rotate-180')} />
+                        <ChevronDown className={cn('h-4 w-4 transition-transform duration-200', etudiantOpen && 'rotate-180')} />
                       </button>
 
                       <div
                         className={cn(
                           'overflow-hidden transition-all duration-300 ease-in-out pl-9 space-y-1',
-                          etudiantsOpen ? 'max-h-[300px] opacity-100 mt-1' : 'max-h-0 opacity-0'
+                          etudiantOpen ? 'max-h-[300px] opacity-100 mt-1' : 'max-h-0 opacity-0'
                         )}
                       >
                         {items.map((subItem) => {
-                          const subActive = subItem.href === '/students'
-                            ? (pathname === '/students' || (pathname.startsWith('/students/') && !pathname.startsWith('/students/promotions')))
+                          const subActive = subItem.href === '/etudiant'
+                            ? (pathname === '/etudiant' || (pathname.startsWith('/etudiant/') && !pathname.startsWith('/etudiant/promotions')))
                             : pathname === subItem.href || pathname.startsWith(`${subItem.href}/`);
                           return (
                             <Link

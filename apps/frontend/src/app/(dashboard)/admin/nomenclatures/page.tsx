@@ -2,13 +2,13 @@
 
 import { Badge } from '@/components/ui/Badge';
 import { ReferentialPage } from '@/components/referentials/ReferentialPage';
-import { useReferential } from '@/lib/hooks/useStudentQueries';
-import type { NomenclatureProduit } from '@/types/student.types';
+import { useReferential } from '@/lib/hooks/useEtudiantQueries';
+import type { NomenclatureProduit } from '@/types/etudiant.types';
 
 export default function NomenclaturesPage() {
   const typeRecettesQuery = useReferential('types-recettes');
   const filieresQuery = useReferential('filieres');
-  const statutsQuery = useReferential('statuts-etudiants');
+  const statutsQuery = useReferential('statuts-etudiant');
 
   return (
     <ReferentialPage<NomenclatureProduit>

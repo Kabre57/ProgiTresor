@@ -2,7 +2,7 @@ import type { Routes } from '@/@types/routes'
 
 const adminRoles = ['ADMIN', 'Administrateur']
 const accountingRoles = ['ADMIN', 'COMPTABLE', 'CHEF_COMPTABLE', 'DF', 'Administrateur', 'Comptable', 'Chef Comptable', 'Directeur Financier']
-const studentRoles = ['ADMIN', 'COMPTABLE', 'CONSULTANT', 'Administrateur', 'Comptable', 'Consultant']
+const etudiantRoles = ['ADMIN', 'COMPTABLE', 'CONSULTANT', 'Administrateur', 'Comptable', 'Consultant']
 
 export const protectedRoutes: Routes = {
     '/dashboard': {
@@ -17,13 +17,13 @@ export const protectedRoutes: Routes = {
         key: 'recettes',
         authority: accountingRoles,
     },
-    '/students': {
-        key: 'students.list',
-        authority: studentRoles,
+    '/etudiant': {
+        key: 'etudiant.list',
+        authority: etudiantRoles,
     },
-    '/students/promotions': {
-        key: 'students.promotions',
-        authority: studentRoles,
+    '/etudiant/promotions': {
+        key: 'etudiant.promotions',
+        authority: etudiantRoles,
     },
     '/admin/users': {
         key: 'admin.users',
@@ -51,27 +51,27 @@ export const protectedRoutes: Routes = {
     },
     '/admin/antennes': {
         key: 'admin.referentials.antennes',
-        authority: studentRoles,
+        authority: etudiantRoles,
     },
     '/admin/filieres': {
         key: 'admin.referentials.filieres',
-        authority: studentRoles,
+        authority: etudiantRoles,
     },
     '/admin/statuts': {
         key: 'admin.referentials.statuts',
-        authority: studentRoles,
+        authority: etudiantRoles,
     },
     '/admin/types-flux': {
         key: 'admin.referentials.typesFlux',
-        authority: studentRoles,
+        authority: etudiantRoles,
     },
     '/admin/types-recettes': {
         key: 'admin.referentials.typesRecettes',
-        authority: studentRoles,
+        authority: etudiantRoles,
     },
     '/admin/nomenclatures': {
         key: 'admin.referentials.nomenclatures',
-        authority: studentRoles,
+        authority: etudiantRoles,
     },
     '/etudiant/portail': {
         key: 'etudiant.portail',

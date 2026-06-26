@@ -100,7 +100,7 @@ export default function PermissionsPage() {
           />
           <Input
             label="Code"
-            placeholder="Ex: READ_STUDENT, WRITE_COMPTA"
+            placeholder="Ex: READ_ETUDIANT, WRITE_COMPTA"
             error={errors.code?.message}
             {...register('code', { required: 'Le code est requis' })}
           />

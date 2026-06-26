@@ -36,7 +36,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.mergeStudents = exports.deleteTransaction = exports.updateTransaction = exports.syncOpStatus = exports.unlinkTransactionsFromOp = exports.linkTransactionsToOp = exports.getUnassignedTransactions = exports.getTransactions = exports.importTransactions = void 0;
+exports.mergeEtudiants = exports.deleteTransaction = exports.updateTransaction = exports.syncOpStatus = exports.unlinkTransactionsFromOp = exports.linkTransactionsToOp = exports.getUnassignedTransactions = exports.getTransactions = exports.importTransactions = void 0;
 const transactionRepository = __importStar(require("../repositories/transactionRepository"));
 const importFichierRepository = __importStar(require("../repositories/importFichierRepository"));
 const ordrePaiementMiroirRepository = __importStar(require("../repositories/ordrePaiementMiroirRepository"));
@@ -46,7 +46,7 @@ const logger_1 = __importDefault(require("../utils/logger"));
 const filterBuilder_1 = require("../utils/filterBuilder");
 const prisma_1 = require("../utils/prisma");
 const kpiCacheService_1 = require("./kpiCacheService");
-const studentServiceClient_1 = require("../utils/studentServiceClient");
+const etudiantServiceClient_1 = require("../utils/etudiantServiceClient");
 const isPrismaError = (error) => {
     return typeof error === 'object' && error !== null && 'code' in error;
 };
@@ -61,14 +61,14 @@ const importTransactions = async (payload) => {
     }
     const uniqueItems = Array.from(uniqueItemsMap.values());
     const fileDuplicatesCount = payload.items.length - uniqueItems.length;
-    // 2. Batch resolve students by distinct matricules (internal and external)
-    const studentMap = new Map();
+    // 2. Batch resolve etudiant by distinct matricules (internal and external)
+    const etudiantMap = new Map();
     const distinctMatricules = Array.from(new Set(uniqueItems
         .map((item) => (item.matriculeTresorPay || item.etudiantMatricule || '').trim())
         .filter((m) => typeof m === 'string' && m.trim() !== '')));
     if (distinctMatricules.length > 0) {
         try {
-            const students = await (0, studentServiceClient_1.fetchStudentJson)('/batch', {
+            const etudiant = await (0, etudiantServiceClient_1.fetchEtudiantJson)('/batch', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -76,24 +76,24 @@ const importTransactions = async (payload) => {
                 },
                 body: JSON.stringify({ matricules: distinctMatricules }),
             }, []);
-            if (Array.isArray(students)) {
-                for (const s of students) {
+            if (Array.isArray(etudiant)) {
+                for (const s of etudiant) {
                     const resolvedVal = { id: s.id, antenneId: s.antenneId };
                     if (s.matricule)
-                        studentMap.set(s.matricule.toUpperCase(), resolvedVal);
+                        etudiantMap.set(s.matricule.toUpperCase(), resolvedVal);
                     if (s.matriculeTresorPay)
-                        studentMap.set(s.matriculeTresorPay.toUpperCase(), resolvedVal);
+                        etudiantMap.set(s.matriculeTresorPay.toUpperCase(), resolvedVal);
                 }
             }
         }
         catch (err) {
-            logger_1.default.warn(err, 'Failed to resolve students in batch');
+            logger_1.default.warn(err, 'Failed to resolve etudiant in batch');
         }
     }
     // 3. Fetch all nomenclatures to resolve by libelle
     const nomenclatureMap = new Map();
     try {
-        const noms = await (0, studentServiceClient_1.fetchStudentJson)('/nomenclatures', {
+        const noms = await (0, etudiantServiceClient_1.fetchEtudiantJson)('/nomenclatures', {
             headers: {
                 'Accept': 'application/json',
             },
@@ -134,8 +134,8 @@ const importTransactions = async (payload) => {
             let typeFluxId = item.typeFluxId;
             const matCandidate = (item.matriculeTresorPay || item.matricule || item.etudiantMatricule || '').trim();
             if (!etudiantId && matCandidate) {
-                if (studentMap.has(matCandidate.toUpperCase())) {
-                    const resolved = studentMap.get(matCandidate.toUpperCase());
+                if (etudiantMap.has(matCandidate.toUpperCase())) {
+                    const resolved = etudiantMap.get(matCandidate.toUpperCase());
                     etudiantId = resolved.id;
                     if (!antenneId)
                         antenneId = resolved.antenneId;
@@ -143,16 +143,16 @@ const importTransactions = async (payload) => {
                 else {
                     // Si non trouvé dans le batch initial, tenter une résolution par matricule externe (création temporaire)
                     try {
-                        const res = await (0, studentServiceClient_1.fetchStudentResult)(`/tresor-pay/${encodeURIComponent(matCandidate)}`, undefined, null);
+                        const res = await (0, etudiantServiceClient_1.fetchEtudiantResult)(`/tresor-pay/${encodeURIComponent(matCandidate)}`, undefined, null);
                         if (res.ok && res.data) {
-                            const student = res.data;
-                            etudiantId = student.id;
+                            const etudiant = res.data;
+                            etudiantId = etudiant.id;
                             if (!antenneId)
-                                antenneId = student.antenneId;
-                            studentMap.set(matCandidate.toUpperCase(), { id: student.id, antenneId: student.antenneId });
+                                antenneId = etudiant.antenneId;
+                            etudiantMap.set(matCandidate.toUpperCase(), { id: etudiant.id, antenneId: etudiant.antenneId });
                         }
                         else if (res.status === 404) {
-                            const createRes = await (0, studentServiceClient_1.fetchStudentResult)('/tresor-pay/temporary', {
+                            const createRes = await (0, etudiantServiceClient_1.fetchEtudiantResult)('/tresor-pay/temporary', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({
@@ -161,11 +161,11 @@ const importTransactions = async (payload) => {
                                 })
                             }, null);
                             if (createRes.ok && createRes.data) {
-                                const tempStudent = createRes.data;
-                                etudiantId = tempStudent.id;
+                                const tempEtudiant = createRes.data;
+                                etudiantId = tempEtudiant.id;
                                 if (!antenneId)
-                                    antenneId = tempStudent.antenneId;
-                                studentMap.set(matCandidate.toUpperCase(), { id: tempStudent.id, antenneId: tempStudent.antenneId });
+                                    antenneId = tempEtudiant.antenneId;
+                                etudiantMap.set(matCandidate.toUpperCase(), { id: tempEtudiant.id, antenneId: tempEtudiant.antenneId });
                             }
                         }
                     }
@@ -265,30 +265,30 @@ const getTransactions = async (query) => {
         total: Number(totalBudget + totalHorsBudget)
     };
     // Cross-service resolution
-    const studentMap = new Map();
+    const etudiantMap = new Map();
     const nomenclatureMap = new Map();
     const etudiantIds = Array.from(new Set(list.map(tx => tx.etudiantId).filter((id) => id !== null)));
     const nomenclatureIds = Array.from(new Set(list.map(tx => tx.nomenclatureId).filter((id) => id !== null)));
     if (etudiantIds.length > 0) {
         try {
-            const students = await (0, studentServiceClient_1.fetchStudentJson)('/batch-ids', {
+            const etudiant = await (0, etudiantServiceClient_1.fetchEtudiantJson)('/batch-ids', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ids: etudiantIds })
             }, []);
-            if (Array.isArray(students)) {
-                for (const s of students) {
-                    studentMap.set(s.id, s);
+            if (Array.isArray(etudiant)) {
+                for (const s of etudiant) {
+                    etudiantMap.set(s.id, s);
                 }
             }
         }
         catch (err) {
-            logger_1.default.warn(err, 'Failed to batch lookup students by IDs in getTransactions');
+            logger_1.default.warn(err, 'Failed to batch lookup etudiant by IDs in getTransactions');
         }
     }
     if (nomenclatureIds.length > 0) {
         try {
-            const noms = await (0, studentServiceClient_1.fetchStudentJson)('/nomenclatures', undefined, []);
+            const noms = await (0, etudiantServiceClient_1.fetchEtudiantJson)('/nomenclatures', undefined, []);
             if (Array.isArray(noms)) {
                 for (const n of noms) {
                     nomenclatureMap.set(n.id, n);
@@ -302,7 +302,7 @@ const getTransactions = async (query) => {
     const enrichedList = list.map(tx => ({
         ...tx,
         montant: Number(tx.montant),
-        student: tx.etudiantId ? studentMap.get(tx.etudiantId) || null : null,
+        etudiant: tx.etudiantId ? etudiantMap.get(tx.etudiantId) || null : null,
         nomenclature: tx.nomenclatureId ? nomenclatureMap.get(tx.nomenclatureId) || null : null
     }));
     return { list: enrichedList, total, limit, offset, totals };
@@ -347,10 +347,10 @@ const deleteTransaction = async (id) => {
     return transaction;
 };
 exports.deleteTransaction = deleteTransaction;
-const mergeStudents = async (oldStudentId, newStudentId) => {
-    const count = await transactionRepository.updateTransactionsStudentId(oldStudentId, newStudentId);
+const mergeEtudiants = async (oldEtudiantId, newEtudiantId) => {
+    const count = await transactionRepository.updateTransactionsEtudiantId(oldEtudiantId, newEtudiantId);
     await (0, kpiCacheService_1.invalidateKpiCache)();
-    logger_1.default.info({ oldStudentId, newStudentId, count }, 'Merged student transactions');
+    logger_1.default.info({ oldEtudiantId, newEtudiantId, count }, 'Merged etudiant transactions');
     return count;
 };
-exports.mergeStudents = mergeStudents;
+exports.mergeEtudiants = mergeEtudiants;

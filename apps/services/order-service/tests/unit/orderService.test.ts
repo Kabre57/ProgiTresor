@@ -19,7 +19,7 @@ jest.mock('../../src/utils/httpClient', () => ({
     put: jest.fn(),
   },
   TRANSACTION_SERVICE_URL: 'http://mock-transaction:5003',
-  STUDENT_SERVICE_URL: 'http://mock-student:5002',
+  ETUDIANT_SERVICE_URL: 'http://mock-etudiant:5002',
 }));
 jest.mock('../../src/utils/metrics', () => ({
   sagaSuccessCounter: { inc: jest.fn() },

@@ -22,7 +22,7 @@ import {
   fetchFromTresor,
   updateTransaction,
   deleteTransaction,
-  mergeTransactionsStudentId
+  mergeTransactionsEtudiantId
 } from './controllers/transactionController';
 import {
   getImportFichiers,
@@ -181,7 +181,7 @@ app.get('/metrics', getMetrics);
 
 // Transaction endpoints
 app.post('/import', validate(ImportPayloadSchema), importTransactions);
-app.post('/merge-students', mergeTransactionsStudentId);
+app.post('/merge-etudiant', mergeTransactionsEtudiantId);
 app.post('/link-op', validate(LinkOpSchema), linkOp);
 app.post('/unlink-op', validate(UnlinkOpSchema), unlinkOp);
 app.put('/op-status', validate(OpStatusSchema), syncOpStatus);

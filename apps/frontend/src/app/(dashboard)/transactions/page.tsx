@@ -23,7 +23,7 @@ import {
   useUpdateTransaction,
   useDeleteTransaction
 } from '@/lib/hooks/useOperationsQueries';
-import { useReferential, useStudents, usePromotions } from '@/lib/hooks/useStudentQueries';
+import { useReferential, useEtudiants, usePromotions } from '@/lib/hooks/useEtudiantQueries';
 import { transactionApi } from '@/lib/api/transactionApi';
 import { formatCurrency, formatDate } from '@/lib/utils/format';
 
@@ -96,11 +96,11 @@ export default function TransactionsPage() {
   // Referential queries
   const antennesQuery = useReferential('antennes');
   const filieresQuery = useReferential('filieres');
-  const statutsQuery = useReferential('statuts-etudiants');
+  const statutsQuery = useReferential('statuts-etudiant');
   const typesFluxQuery = useReferential('types-flux');
   const typesRecettesQuery = useReferential('types-recettes');
   const nomenclaturesQuery = useReferential('nomenclatures');
-  const studentsListQuery = useStudents(); // for student select in edit modal
+  const etudiantListQuery = useEtudiants(); // for etudiant select in edit modal
 
   // Map referentials for select options
   const antenneOptions = (antennesQuery.data ?? []).map((item: any) => ({
@@ -139,7 +139,7 @@ export default function TransactionsPage() {
     label: p.nom,
   }));
 
-  const studentOptions = (studentsListQuery.data ?? []).map((s: any) => ({
+  const etudiantOptions = (etudiantListQuery.data ?? []).map((s: any) => ({
     value: String(s.id),
     label: `${s.matricule} - ${s.nom} ${s.prenom}`,
   }));
@@ -408,10 +408,10 @@ export default function TransactionsPage() {
       key: 'matriculeEtudiant', 
       header: 'Étudiant', 
       sortable: true,
-      render: (row: any) => row.student ? (
+      render: (row: any) => row.etudiant ? (
         <div className="flex flex-col">
-          <span className="font-semibold text-slate-800 dark:text-slate-100">{row.student.nom} {row.student.prenom}</span>
-          <span className="text-xs text-slate-400">{row.student.matricule}</span>
+          <span className="font-semibold text-slate-800 dark:text-slate-100">{row.etudiant.nom} {row.etudiant.prenom}</span>
+          <span className="text-xs text-slate-400">{row.etudiant.matricule}</span>
         </div>
       ) : (
         <span className="text-slate-400">{row.etudiantId || '-'}</span>
@@ -765,7 +765,7 @@ export default function TransactionsPage() {
             <Select
               label="Étudiant"
               placeholder="Aucun étudiant"
-              options={studentOptions}
+              options={etudiantOptions}
               value={editForm.etudiantId !== undefined ? String(editForm.etudiantId) : ''}
               onChange={(e) => setEditForm(f => ({ ...f, etudiantId: e.target.value ? Number(e.target.value) : undefined }))}
               searchable

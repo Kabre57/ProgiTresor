@@ -2,7 +2,7 @@
 
 import { Badge } from '@/components/ui/Badge';
 import { ReferentialPage } from '@/components/referentials/ReferentialPage';
-import type { Promotion } from '@/types/student.types';
+import type { Promotion } from '@/types/etudiant.types';
 
 export default function PromotionsPage() {
   return (
@@ -20,7 +20,7 @@ export default function PromotionsPage() {
         { key: 'nom', header: 'Nom de la Promotion', render: (row) => <Badge tone="info">{row.nom}</Badge> },
         { key: 'ordre', header: 'Ordre', render: (row) => row.ordre },
         { key: 'actif', header: 'Statut', render: (row) => <Badge tone={row.actif ? 'success' : 'danger'}>{row.actif ? 'Actif' : 'Inactif'}</Badge> },
-        { key: 'etudiantsCount', header: 'Nombre d’étudiants', render: (row: any) => row._count?.etudiants ?? 0 },
+        { key: 'etudiantCount', header: 'Nombre d’étudiants', render: (row: any) => row._count?.etudiant ?? 0 },
       ]}
     />
   );

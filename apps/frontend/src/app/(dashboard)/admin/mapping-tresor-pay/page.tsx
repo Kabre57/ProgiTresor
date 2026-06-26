@@ -25,11 +25,11 @@ import { Modal } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/Toast';
 import { getErrorMessage } from '@/lib/api/client';
 import {
-  useStudents,
+  useEtudiants,
   useMapTresorPay,
-  useTemporaryStudentNotifications,
-  useMarkTemporaryStudentNotificationTreated
-} from '@/lib/hooks/useStudentQueries';
+  useTemporaryEtudiantNotifications,
+  useMarkTemporaryEtudiantNotificationTreated
+} from '@/lib/hooks/useEtudiantQueries';
 import { formatDate } from '@/lib/utils/format';
 
 const mappingFormSchema = z.object({
@@ -50,13 +50,13 @@ export default function AdminMappingPage() {
   const pageSize = 10;
   
   // Modals state
-  const [editingStudent, setEditingStudent] = useState<any | null>(null);
+  const [editingEtudiant, setEditingEtudiant] = useState<any | null>(null);
   
   // Queries & Mutations
-  const studentsQuery = useStudents(searchTerm || undefined);
-  const notificationsQuery = useTemporaryStudentNotifications();
+  const etudiantQuery = useEtudiants(searchTerm || undefined);
+  const notificationsQuery = useTemporaryEtudiantNotifications();
   const mapTresorPay = useMapTresorPay();
-  const markTreated = useMarkTemporaryStudentNotificationTreated();
+  const markTreated = useMarkTemporaryEtudiantNotificationTreated();
 
   const {
     register,
@@ -67,23 +67,23 @@ export default function AdminMappingPage() {
     resolver: zodResolver(mappingFormSchema),
   });
 
-  const handleStartEdit = (student: any) => {
-    setEditingStudent(student);
+  const handleStartEdit = (etudiant: any) => {
+    setEditingEtudiant(etudiant);
     reset({
-      matriculeTresorPay: student.matriculeTresorPay || '',
+      matriculeTresorPay: etudiant.matriculeTresorPay || '',
     });
   };
 
   const onSubmit = async (values: MappingFormInput) => {
-    if (!editingStudent) return;
+    if (!editingEtudiant) return;
     try {
       await mapTresorPay.mutateAsync({
-        matricule: editingStudent.matricule,
+        matricule: editingEtudiant.matricule,
         matriculeTresorPay: values.matriculeTresorPay,
       });
-      toast.success(`Le matricule Trésor Pay de ${editingStudent.nom} ${editingStudent.prenom} a été enregistré.`);
-      setEditingStudent(null);
-      studentsQuery.refetch();
+      toast.success(`Le matricule Trésor Pay de ${editingEtudiant.nom} ${editingEtudiant.prenom} a été enregistré.`);
+      setEditingEtudiant(null);
+      etudiantQuery.refetch();
       notificationsQuery.refetch();
     } catch (err) {
       toast.error(getErrorMessage(err), 'Échec de la mise à jour');
@@ -316,13 +316,13 @@ export default function AdminMappingPage() {
           <CardContent className="pt-6">
             <DataTable
               columns={mappingColumns}
-              data={(studentsQuery.data || []).slice((mappingsPage - 1) * pageSize, mappingsPage * pageSize)}
-              loading={studentsQuery.isLoading}
+              data={(etudiantQuery.data || []).slice((mappingsPage - 1) * pageSize, mappingsPage * pageSize)}
+              loading={etudiantQuery.isLoading}
               getRowKey={(row: any) => row.matricule}
               pagination={{
                 currentPage: mappingsPage,
                 pageSize: pageSize,
-                totalCount: (studentsQuery.data || []).length,
+                totalCount: (etudiantQuery.data || []).length,
                 onPageChange: (p) => setMappingsPage(p),
               }}
             />
@@ -364,21 +364,21 @@ export default function AdminMappingPage() {
 
       {/* Edit Mapping Modal */}
       <Modal
-        open={!!editingStudent}
-        onClose={() => setEditingStudent(null)}
+        open={!!editingEtudiant}
+        onClose={() => setEditingEtudiant(null)}
         title="Configurer le matricule externe Trésor Pay"
         width={500}
       >
-        {editingStudent && (
+        {editingEtudiant && (
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-2">
             <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm space-y-2">
               <div className="text-slate-400">
-                Étudiant : <span className="font-semibold text-white">{editingStudent.nom} {editingStudent.prenom}</span>
+                Étudiant : <span className="font-semibold text-white">{editingEtudiant.nom} {editingEtudiant.prenom}</span>
               </div>
               <div className="text-slate-400">
-                Matricule Interne : <span className="font-mono font-semibold text-amber-500">{editingStudent.matricule}</span>
+                Matricule Interne : <span className="font-mono font-semibold text-amber-500">{editingEtudiant.matricule}</span>
               </div>
-              {editingStudent.estTemporaire && (
+              {editingEtudiant.estTemporaire && (
                 <div className="text-rose-400 text-xs font-semibold flex items-center gap-1">
                   <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
                   Ce profil est temporaire. Mappez-le à un étudiant réel pour fusionner automatiquement toutes ses transactions vers cet étudiant.
@@ -406,7 +406,7 @@ export default function AdminMappingPage() {
               <Button
                 type="button"
                 variant="secondary"
-                onClick={() => setEditingStudent(null)}
+                onClick={() => setEditingEtudiant(null)}
                 disabled={isSubmitting}
               >
                 Annuler

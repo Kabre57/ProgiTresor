@@ -5,7 +5,7 @@ import AdaptiveCard from '@/components/shared/AdaptiveCard'
 import SettingsMenu from './SettingsMenu'
 import SettingMobileMenu from './SettingMobileMenu'
 import Loading from '@/components/shared/Loading'
-import { useSettingsStore } from '../_store/settingsStore'
+import { useSettingsStore } from '.@/lib/store/etudiant/settingsStore'
 
 const Profile = lazy(() => import('./SettingsProfile'))
 const Security = lazy(() => import('./SettingsSecurity'))

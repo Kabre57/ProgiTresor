@@ -56,7 +56,7 @@ const InternalScroll = () => {
                             vice president Brian Valentine describing the state
                             of the art in OS security, 2003) It is practically
                             impossible to teach good programming style to
-                            students that have had prior exposure to BASIC. As
+                            etudiant that have had prior exposure to BASIC. As
                             potential programmers, they are mentally mutilated
                             beyond hope of regeneration. (E. W. Dijkstra) It has
                             been said that the great scientific disciplines are

@@ -8,7 +8,7 @@
   - `gateway/` : API Gateway Express.js (RBAC, Rate Limiting, Proxying)
   - `services/` :
     - `auth-service/` : Authentification JWT, Audits, Utilisateurs
-    - `student-service/` : Profils étudiants, Antennes, Filières, Promotions (avec cache Redis)
+    - `etudiant-service/` : Profils étudiants, Antennes, Filières, Promotions (avec cache Redis)
     - `transaction-service/` : Import, Nettoyage des transactions et nomenclature produits
     - `order-service/` : Regroupements, Sagas de validation et compensation des OP
 - `shared/` : Types et constantes partagées

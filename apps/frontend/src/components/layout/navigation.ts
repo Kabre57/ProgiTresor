@@ -28,7 +28,7 @@ export type NavigationGroup = {
 
 const adminRoles: RoleCode[] = ['ADMIN', 'Administrateur'];
 const accountingRoles: RoleCode[] = ['ADMIN', 'COMPTABLE', 'CHEF_COMPTABLE', 'DF', 'Administrateur', 'Comptable', 'Chef Comptable', 'Directeur Financier'];
-const studentRoles: RoleCode[] = ['ADMIN', 'COMPTABLE', 'CONSULTANT', 'Administrateur', 'Comptable', 'Consultant'];
+const etudiantRoles: RoleCode[] = ['ADMIN', 'COMPTABLE', 'CONSULTANT', 'Administrateur', 'Comptable', 'Consultant'];
 const orderRoles: RoleCode[] = ['ADMIN', 'COMPTABLE', 'CHEF_COMPTABLE', 'DF', 'BUDGET', 'Administrateur', 'Comptable', 'Chef Comptable', 'Directeur Financier', 'Agent Budget'];
 
 export const navigationGroups: NavigationGroup[] = [
@@ -43,15 +43,15 @@ export const navigationGroups: NavigationGroup[] = [
   {
     label: 'Étudiants',
     items: [
-      { label: 'Fiches étudiants', href: '/students', icon: PiGraduationCapDuotone, roles: studentRoles },
-      { label: 'Réf. Promotions', href: '/students/promotions', icon: PiListChecksDuotone, roles: studentRoles },
+      { label: 'Fiches étudiants', href: '/etudiant', icon: PiGraduationCapDuotone, roles: etudiantRoles },
+      { label: 'Réf. Promotions', href: '/etudiant/promotions', icon: PiListChecksDuotone, roles: etudiantRoles },
       { label: 'Promotions', href: '/admin/promotions', icon: PiListChecksDuotone, roles: adminRoles },
-      { label: 'Antennes', href: '/admin/antennes', icon: PiBuildingDuotone, roles: studentRoles },
-      { label: 'Filières', href: '/admin/filieres', icon: PiStackDuotone, roles: studentRoles },
-      { label: 'Statuts', href: '/admin/statuts', icon: PiListChecksDuotone, roles: studentRoles },
-      { label: 'Types flux', href: '/admin/types-flux', icon: PiShareNetworkDuotone, roles: studentRoles },
-      { label: 'Types recettes', href: '/admin/types-recettes', icon: PiCurrencyCircleDollarDuotone, roles: studentRoles },
-      { label: 'Nomenclatures', href: '/admin/nomenclatures', icon: PiBookOpenDuotone, roles: studentRoles },
+      { label: 'Antennes', href: '/admin/antennes', icon: PiBuildingDuotone, roles: etudiantRoles },
+      { label: 'Filières', href: '/admin/filieres', icon: PiStackDuotone, roles: etudiantRoles },
+      { label: 'Statuts', href: '/admin/statuts', icon: PiListChecksDuotone, roles: etudiantRoles },
+      { label: 'Types flux', href: '/admin/types-flux', icon: PiShareNetworkDuotone, roles: etudiantRoles },
+      { label: 'Types recettes', href: '/admin/types-recettes', icon: PiCurrencyCircleDollarDuotone, roles: etudiantRoles },
+      { label: 'Nomenclatures', href: '/admin/nomenclatures', icon: PiBookOpenDuotone, roles: etudiantRoles },
     ],
   },
   {

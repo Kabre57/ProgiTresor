@@ -1,14 +1,14 @@
 export * from './auth.types';
 export {
-  StudentCreateSchema,
-  StudentUpdateSchema,
+  EtudiantCreateSchema,
+  EtudiantUpdateSchema,
   BatchLookupSchema,
-  PaginationSchema as StudentPaginationSchema,
-  type StudentCreateInput,
-  type StudentUpdateInput,
+  PaginationSchema as EtudiantPaginationSchema,
+  type EtudiantCreateInput,
+  type EtudiantUpdateInput,
   type BatchLookupInput,
-  type PaginationInput as StudentPaginationInput,
-} from './student.types';
+  type PaginationInput as EtudiantPaginationInput,
+} from './etudiant.types';
 export * from './transaction.types';
 export * from './order.types';
 export * from './compta.types';

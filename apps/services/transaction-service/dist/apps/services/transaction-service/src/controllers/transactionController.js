@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.mergeTransactionsStudentId = exports.deleteTransaction = exports.updateTransaction = exports.fetchFromTresor = exports.getMetrics = exports.healthCheck = exports.syncOpStatus = exports.unlinkOp = exports.linkOp = exports.getUnassigned = exports.getTransactions = exports.importTransactions = exports.validate = void 0;
+exports.mergeTransactionsEtudiantId = exports.deleteTransaction = exports.updateTransaction = exports.fetchFromTresor = exports.getMetrics = exports.healthCheck = exports.syncOpStatus = exports.unlinkOp = exports.linkOp = exports.getUnassigned = exports.getTransactions = exports.importTransactions = exports.validate = void 0;
 const transactionService = __importStar(require("../services/transactionService"));
 const errors_1 = require("../utils/errors");
 const prisma_1 = require("../utils/prisma");
@@ -380,17 +380,17 @@ const deleteTransaction = async (req, res, next) => {
     }
 };
 exports.deleteTransaction = deleteTransaction;
-const mergeTransactionsStudentId = async (req, res, next) => {
+const mergeTransactionsEtudiantId = async (req, res, next) => {
     try {
-        const { oldStudentId, newStudentId } = req.body;
-        if (oldStudentId === undefined || newStudentId === undefined) {
-            throw new errors_1.AppError(400, 'oldStudentId et newStudentId requis');
+        const { oldEtudiantId, newEtudiantId } = req.body;
+        if (oldEtudiantId === undefined || newEtudiantId === undefined) {
+            throw new errors_1.AppError(400, 'oldEtudiantId et newEtudiantId requis');
         }
-        const count = await transactionService.mergeStudents(parseInt(oldStudentId, 10), parseInt(newStudentId, 10));
+        const count = await transactionService.mergeEtudiants(parseInt(oldEtudiantId, 10), parseInt(newEtudiantId, 10));
         res.json({ message: 'Merge complété', count });
     }
     catch (e) {
         next(e);
     }
 };
-exports.mergeTransactionsStudentId = mergeTransactionsStudentId;
+exports.mergeTransactionsEtudiantId = mergeTransactionsEtudiantId;

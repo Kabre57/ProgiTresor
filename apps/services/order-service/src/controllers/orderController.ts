@@ -29,7 +29,7 @@ export const validate = (schema: ZodSchema) => (req: Request, res: Response, nex
  *   post:
  *     summary: Generate payment orders through Saga orchestration
  *     tags: [Orders]
- *     description: Fetches unassigned Hors Budget transactions, resolves students, groups by antenna/level/product, creates OPs, and links transactions. Uses Saga pattern with compensation on failure.
+ *     description: Fetches unassigned Hors Budget transactions, resolves etudiant, groups by antenna/level/product, creates OPs, and links transactions. Uses Saga pattern with compensation on failure.
  *     responses:
  *       200:
  *         description: OPs generated successfully

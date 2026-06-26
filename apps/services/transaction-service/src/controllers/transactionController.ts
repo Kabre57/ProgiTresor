@@ -343,15 +343,15 @@ export const deleteTransaction = async (req: Request, res: Response, next: NextF
   }
 };
 
-export const mergeTransactionsStudentId = async (req: Request, res: Response, next: NextFunction) => {
+export const mergeTransactionsEtudiantId = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { oldStudentId, newStudentId } = req.body;
-    if (oldStudentId === undefined || newStudentId === undefined) {
-      throw new AppError(400, 'oldStudentId et newStudentId requis');
+    const { oldEtudiantId, newEtudiantId } = req.body;
+    if (oldEtudiantId === undefined || newEtudiantId === undefined) {
+      throw new AppError(400, 'oldEtudiantId et newEtudiantId requis');
     }
-    const count = await transactionService.mergeStudents(
-      parseInt(oldStudentId, 10),
-      parseInt(newStudentId, 10)
+    const count = await transactionService.mergeEtudiants(
+      parseInt(oldEtudiantId, 10),
+      parseInt(newEtudiantId, 10)
     );
     res.json({ message: 'Merge complété', count });
   } catch (e) {

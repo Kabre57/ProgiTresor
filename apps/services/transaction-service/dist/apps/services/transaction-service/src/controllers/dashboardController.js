@@ -10,7 +10,7 @@ const filterBuilder_1 = require("../utils/filterBuilder");
 const kpiCacheService_1 = require("../services/kpiCacheService");
 const stream_1 = require("stream");
 const events_1 = require("events");
-const studentServiceClient_1 = require("../utils/studentServiceClient");
+const etudiantServiceClient_1 = require("../utils/etudiantServiceClient");
 const escapeCsvValue = (value) => {
     if (value.includes(',') || value.includes('"') || value.includes('\n')) {
         return `"${value.replace(/"/g, '""')}"`;
@@ -58,10 +58,10 @@ const getKpis = async (req, res, next) => {
                 where.antenneId = aid;
             }
         }
-        // Récupérer les nomenclatures depuis student-service
+        // Récupérer les nomenclatures depuis etudiant-service
         const nomMap = new Map();
         try {
-            const nomenclatures = await (0, studentServiceClient_1.fetchStudentJson)('/nomenclatures', undefined, []);
+            const nomenclatures = await (0, etudiantServiceClient_1.fetchEtudiantJson)('/nomenclatures', undefined, []);
             if (Array.isArray(nomenclatures)) {
                 for (const nom of nomenclatures) {
                     const typeStr = nom.typeRecette?.typeFlux?.libelle ||
@@ -74,7 +74,7 @@ const getKpis = async (req, res, next) => {
             }
         }
         catch (err) {
-            logger_1.default.warn(err, 'Failed to fetch nomenclatures from student-service');
+            logger_1.default.warn(err, 'Failed to fetch nomenclatures from etudiant-service');
         }
         const grouped = await prisma_1.prisma.transaction.groupBy({
             by: ['typeFluxId', 'nomenclatureId', 'libelleProduitBrut'],
@@ -141,9 +141,9 @@ const exportTransactions = async (req, res, next) => {
         const nomenclatureMap = new Map();
         try {
             const [antennes, flux, nomenclatures] = await Promise.all([
-                (0, studentServiceClient_1.fetchStudentJson)('/antennes', undefined, []),
-                (0, studentServiceClient_1.fetchStudentJson)('/types-flux', undefined, []),
-                (0, studentServiceClient_1.fetchStudentJson)('/nomenclatures', undefined, [])
+                (0, etudiantServiceClient_1.fetchEtudiantJson)('/antennes', undefined, []),
+                (0, etudiantServiceClient_1.fetchEtudiantJson)('/types-flux', undefined, []),
+                (0, etudiantServiceClient_1.fetchEtudiantJson)('/nomenclatures', undefined, [])
             ]);
             if (Array.isArray(antennes)) {
                 for (const a of antennes)
@@ -204,35 +204,35 @@ const exportTransactions = async (req, res, next) => {
             });
             if (transactions.length === 0)
                 break;
-            // Batch resolve student IDs for this chunk
-            const studentIds = Array.from(new Set(transactions
+            // Batch resolve etudiant IDs for this chunk
+            const etudiantIds = Array.from(new Set(transactions
                 .map((t) => t.etudiantId)
                 .filter((id) => id !== null)));
-            const studentMap = new Map();
-            if (studentIds.length > 0) {
+            const etudiantMap = new Map();
+            if (etudiantIds.length > 0) {
                 try {
-                    const students = await (0, studentServiceClient_1.fetchStudentJson)('/batch-ids', {
+                    const etudiant = await (0, etudiantServiceClient_1.fetchEtudiantJson)('/batch-ids', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ ids: studentIds }),
+                        body: JSON.stringify({ ids: etudiantIds }),
                     }, []);
-                    for (const s of students) {
-                        studentMap.set(s.id, s);
+                    for (const s of etudiant) {
+                        etudiantMap.set(s.id, s);
                     }
                 }
                 catch (err) {
-                    logger_1.default.warn(err, 'Failed to batch fetch students from student-service during export batch');
+                    logger_1.default.warn(err, 'Failed to batch fetch etudiant from etudiant-service during export batch');
                 }
             }
             for (const tx of transactions) {
-                const student = tx.etudiantId ? studentMap.get(tx.etudiantId) : null;
-                const studentName = student
-                    ? `${student.matricule} - ${student.nom} ${student.prenom}`
+                const etudiant = tx.etudiantId ? etudiantMap.get(tx.etudiantId) : null;
+                const etudiantName = etudiant
+                    ? `${etudiant.matricule} - ${etudiant.nom} ${etudiant.prenom}`
                     : tx.etudiantId
                         ? `ID: ${tx.etudiantId}`
                         : '';
                 const antenneName = tx.antenneId
-                    ? antenneMap.get(tx.antenneId) || student?.antenne?.nom || `ID: ${tx.antenneId}`
+                    ? antenneMap.get(tx.antenneId) || etudiant?.antenne?.nom || `ID: ${tx.antenneId}`
                     : '';
                 const nomenclatureLibelle = tx.nomenclatureId
                     ? nomenclatureMap.get(tx.nomenclatureId) || `ID: ${tx.nomenclatureId}`
@@ -245,8 +245,8 @@ const exportTransactions = async (req, res, next) => {
                     tx.refTresor,
                     tx.dateHeure.toISOString(),
                     Number(tx.montant).toString(),
-                    studentName,
-                    student?.promotionString || student?.promotion?.nom || '',
+                    etudiantName,
+                    etudiant?.promotionString || etudiant?.promotion?.nom || '',
                     antenneName,
                     nomenclatureLibelle,
                     typeFluxLibelle,
@@ -269,10 +269,10 @@ exports.exportTransactions = exportTransactions;
 const getGroupedByRecette = async (req, res, next) => {
     try {
         const where = await (0, filterBuilder_1.buildTransactionWhereClause)(req.query);
-        // Fetch nomenclatures from student-service
+        // Fetch nomenclatures from etudiant-service
         const nomMap = new Map();
         try {
-            const nomenclatures = await (0, studentServiceClient_1.fetchStudentJson)('/nomenclatures', undefined, []);
+            const nomenclatures = await (0, etudiantServiceClient_1.fetchEtudiantJson)('/nomenclatures', undefined, []);
             if (Array.isArray(nomenclatures)) {
                 for (const nom of nomenclatures) {
                     nomMap.set(nom.id, {
@@ -284,7 +284,7 @@ const getGroupedByRecette = async (req, res, next) => {
             }
         }
         catch (err) {
-            logger_1.default.warn(err, 'Failed to fetch nomenclatures from student-service');
+            logger_1.default.warn(err, 'Failed to fetch nomenclatures from etudiant-service');
         }
         const grouped = await prisma_1.prisma.transaction.groupBy({
             by: ['nomenclatureId', 'typeFluxId', 'libelleProduitBrut'],
@@ -357,10 +357,10 @@ exports.getGroupedByRecette = getGroupedByRecette;
 const exportSynthese = async (req, res, next) => {
     try {
         const where = await (0, filterBuilder_1.buildTransactionWhereClause)(req.query);
-        // Fetch nomenclatures from student-service
+        // Fetch nomenclatures from etudiant-service
         const nomMap = new Map();
         try {
-            const nomenclatures = await (0, studentServiceClient_1.fetchStudentJson)('/nomenclatures', undefined, []);
+            const nomenclatures = await (0, etudiantServiceClient_1.fetchEtudiantJson)('/nomenclatures', undefined, []);
             if (Array.isArray(nomenclatures)) {
                 for (const nom of nomenclatures) {
                     nomMap.set(nom.id, {
@@ -372,7 +372,7 @@ const exportSynthese = async (req, res, next) => {
             }
         }
         catch (err) {
-            logger_1.default.warn(err, 'Failed to fetch nomenclatures from student-service');
+            logger_1.default.warn(err, 'Failed to fetch nomenclatures from etudiant-service');
         }
         const grouped = await prisma_1.prisma.transaction.groupBy({
             by: ['nomenclatureId', 'typeFluxId', 'libelleProduitBrut'],

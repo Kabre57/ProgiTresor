@@ -155,7 +155,7 @@ app.get('/health', transactionController_1.healthCheck);
 app.get('/metrics', transactionController_1.getMetrics);
 // Transaction endpoints
 app.post('/import', (0, transactionController_1.validate)(transaction_types_1.ImportPayloadSchema), transactionController_1.importTransactions);
-app.post('/merge-students', transactionController_1.mergeTransactionsStudentId);
+app.post('/merge-etudiant', transactionController_1.mergeTransactionsEtudiantId);
 app.post('/link-op', (0, transactionController_1.validate)(transaction_types_1.LinkOpSchema), transactionController_1.linkOp);
 app.post('/unlink-op', (0, transactionController_1.validate)(transaction_types_1.UnlinkOpSchema), transactionController_1.unlinkOp);
 app.put('/op-status', (0, transactionController_1.validate)(transaction_types_1.OpStatusSchema), transactionController_1.syncOpStatus);

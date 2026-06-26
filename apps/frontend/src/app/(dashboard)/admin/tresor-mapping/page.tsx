@@ -17,9 +17,9 @@ import {
   useCreateReferential,
   useUpdateReferential,
   useDeleteReferential,
-} from '@/lib/hooks/useStudentQueries';
+} from '@/lib/hooks/useEtudiantQueries';
 import { getErrorMessage } from '@/lib/api/client';
-import type { NomenclatureProduit } from '@/types/student.types';
+import type { NomenclatureProduit } from '@/types/etudiant.types';
 
 export default function TresorMappingPage() {
   const toast = useToast();
@@ -28,7 +28,7 @@ export default function TresorMappingPage() {
   const nomenclaturesQuery = useReferential('nomenclatures');
   const typeRecettesQuery = useReferential('types-recettes');
   const filieresQuery = useReferential('filieres');
-  const statutsQuery = useReferential('statuts-etudiants');
+  const statutsQuery = useReferential('statuts-etudiant');
 
   // Mutations
   const createMutation = useCreateReferential('nomenclatures');

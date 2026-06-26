@@ -2,7 +2,7 @@
 
 import { Badge } from '@/components/ui/Badge';
 import { ReferentialPage } from '@/components/referentials/ReferentialPage';
-import type { Filiere } from '@/types/student.types';
+import type { Filiere } from '@/types/etudiant.types';
 
 export default function FilieresPage() {
   return (

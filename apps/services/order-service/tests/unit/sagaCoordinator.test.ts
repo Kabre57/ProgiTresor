@@ -22,7 +22,7 @@ jest.mock('../../src/utils/httpClient', () => ({
     put: jest.fn(),
   },
   TRANSACTION_SERVICE_URL: 'http://mock-transaction:5003',
-  STUDENT_SERVICE_URL: 'http://mock-student:5002',
+  ETUDIANT_SERVICE_URL: 'http://mock-etudiant:5002',
 }));
 
 jest.mock('../../src/utils/metrics', () => ({
@@ -46,10 +46,10 @@ describe('SagaCoordinator', () => {
     const { http } = require('../../src/utils/httpClient');
 
     // Mock unassigned transactions:
-    // tx1: antenne 1, student 101, nomenclature 201, amount 1000
-    // tx2: antenne 1, student 101, nomenclature 201, amount 2000 (same group)
-    // tx3: antenne 1, student 102 (different level), nomenclature 201, amount 3000 (different group)
-    // tx4: antenne 2, student 101, nomenclature 202 (different recipe), amount 4000 (different group)
+    // tx1: antenne 1, etudiant 101, nomenclature 201, amount 1000
+    // tx2: antenne 1, etudiant 101, nomenclature 201, amount 2000 (same group)
+    // tx3: antenne 1, etudiant 102 (different level), nomenclature 201, amount 3000 (different group)
+    // tx4: antenne 2, etudiant 101, nomenclature 202 (different recipe), amount 4000 (different group)
     const mockTransactions = [
       { id: 1, montant: '1000', antenneId: 1, etudiantId: 101, nomenclatureId: 201, typeFluxId: 2, libelleProduitBrut: 'PROD-A' },
       { id: 2, montant: '2000', antenneId: 1, etudiantId: 101, nomenclatureId: 201, typeFluxId: 2, libelleProduitBrut: 'PROD-A' },
@@ -68,7 +68,7 @@ describe('SagaCoordinator', () => {
         return Promise.resolve({ data: { id: 202, typeRecetteId: 20, libelleStandard: 'Recette Standard B' } });
       }
       if (url.endsWith('/')) {
-        // student query
+        // etudiant query
         const ids = config?.params?.ids;
         if (ids === '101') {
           return Promise.resolve({ data: [{ id: 101, filiereId: 5, antenneId: 1 }] });

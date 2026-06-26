@@ -1,0 +1,84 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Etudiant Service API",
+    "version": "1.0.0",
+    "description": "API for Etudiant Master Data and Antennas on Progi Teck"
+  },
+  "paths": {
+    "/batch": {
+      "post": {
+        "summary": "Batch lookup etudiant profiles",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "matricules"
+                ],
+                "properties": {
+                  "matricules": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "List of resolved etudiant profiles"
+          }
+        }
+      }
+    },
+    "/{matricule}": {
+      "get": {
+        "summary": "Get etudiant by matricule",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "matricule",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Etudiant profile retrieved"
+          },
+          "404": {
+            "description": "Etudiant not found"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update a etudiant",
+        "responses": {
+          "200": {
+            "description": "Etudiant updated"
+          }
+        }
+      }
+    },
+    "/": {
+      "post": {
+        "summary": "Create a etudiant",
+        "responses": {
+          "201": {
+            "description": "Etudiant created"
+          }
+        }
+      }
+    }
+  },
+  "components": {},
+  "tags": []
+}

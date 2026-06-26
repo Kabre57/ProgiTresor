@@ -2,7 +2,7 @@ import axios, { AxiosInstance } from 'axios';
 import axiosRetry from 'axios-retry';
 
 const TRANSACTION_SERVICE_URL = process.env.TRANSACTION_SERVICE_URL || 'http://localhost:5003';
-const STUDENT_SERVICE_URL = process.env.STUDENT_SERVICE_URL || 'http://localhost:5002';
+const ETUDIANT_SERVICE_URL = process.env.ETUDIANT_SERVICE_URL || 'http://localhost:5002';
 
 /**
  * Client HTTP avec retry exponentiel pour les appels inter-services.
@@ -14,4 +14,4 @@ axiosRetry(http, {
   retryCondition: (error) => (error.response?.status ?? 500) >= 500
 });
 
-export { http, TRANSACTION_SERVICE_URL, STUDENT_SERVICE_URL };
+export { http, TRANSACTION_SERVICE_URL, ETUDIANT_SERVICE_URL };

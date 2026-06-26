@@ -2,7 +2,7 @@
 
 import { Badge } from '@/components/ui/Badge';
 import { ReferentialPage } from '@/components/referentials/ReferentialPage';
-import type { Antenne } from '@/types/student.types';
+import type { Antenne } from '@/types/etudiant.types';
 
 export default function AntennesPage() {
   return (

@@ -12,7 +12,7 @@ import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { useTransactions, useDashboardKpis, useGroupedByRecette } from '@/lib/hooks/useOperationsQueries';
-import { useReferential } from '@/lib/hooks/useStudentQueries';
+import { useReferential } from '@/lib/hooks/useEtudiantQueries';
 import { transactionApi } from '@/lib/api/transactionApi';
 import { formatCurrency } from '@/lib/utils/format';
 import { cn } from '@/lib/utils/cn';

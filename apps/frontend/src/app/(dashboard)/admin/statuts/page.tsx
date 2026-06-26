@@ -2,12 +2,12 @@
 
 import { Badge } from '@/components/ui/Badge';
 import { ReferentialPage } from '@/components/referentials/ReferentialPage';
-import type { StatutEtudiant } from '@/types/student.types';
+import type { StatutEtudiant } from '@/types/etudiant.types';
 
 export default function StatutsPage() {
   return (
     <ReferentialPage<StatutEtudiant>
-      endpoint="statuts-etudiants"
+      endpoint="statuts-etudiant"
       title="Statuts étudiants"
       description="États administratifs des étudiants."
       fields={[

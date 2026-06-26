@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.buildTransactionWhereClause = void 0;
 const logger_1 = __importDefault(require("./logger"));
-const studentServiceClient_1 = require("./studentServiceClient");
+const etudiantServiceClient_1 = require("./etudiantServiceClient");
 const isPresent = (val) => {
     if (val === undefined || val === null)
         return false;
@@ -68,25 +68,25 @@ const buildTransactionWhereClause = async (query) => {
             mode: 'insensitive',
         };
     }
-    // 3. Student Service Filter Composition
-    const hasStudentFilters = isPresent(etudiantMatricule) ||
+    // 3. Etudiant Service Filter Composition
+    const hasEtudiantFilters = isPresent(etudiantMatricule) ||
         isPresent(etudiantNom) ||
         isPresent(promotion) ||
         isPresent(promotionId) ||
         parsedAntenneIds !== undefined ||
         parsedFiliereIds !== undefined ||
         parsedStatutIds !== undefined;
-    if (hasStudentFilters) {
-        let studentSearch = undefined;
+    if (hasEtudiantFilters) {
+        let etudiantSearch = undefined;
         if (isPresent(etudiantMatricule)) {
-            studentSearch = etudiantMatricule;
+            etudiantSearch = etudiantMatricule;
         }
         else if (isPresent(etudiantNom)) {
-            studentSearch = etudiantNom;
+            etudiantSearch = etudiantNom;
         }
         const params = new URLSearchParams();
-        if (studentSearch)
-            params.append('search', studentSearch);
+        if (etudiantSearch)
+            params.append('search', etudiantSearch);
         if (parsedAntenneIds)
             params.append('antenneId', parsedAntenneIds.join(','));
         if (parsedFiliereIds)
@@ -98,24 +98,24 @@ const buildTransactionWhereClause = async (query) => {
         if (isPresent(promotionId))
             params.append('promotionId', String(promotionId));
         try {
-            const students = await (0, studentServiceClient_1.fetchStudentJson)(`/?${params.toString()}`, undefined, []);
-            if (Array.isArray(students)) {
-                const studentIds = students.map((s) => s.id);
-                where.etudiantId = { in: studentIds };
+            const etudiant = await (0, etudiantServiceClient_1.fetchEtudiantJson)(`/?${params.toString()}`, undefined, []);
+            if (Array.isArray(etudiant)) {
+                const etudiantIds = etudiant.map((s) => s.id);
+                where.etudiantId = { in: etudiantIds };
             }
             else {
                 where.etudiantId = { in: [] };
             }
         }
         catch (err) {
-            logger_1.default.warn(err, 'Failed to query student-service for transaction filtering');
+            logger_1.default.warn(err, 'Failed to query etudiant-service for transaction filtering');
             where.etudiantId = { in: [] };
         }
     }
     // 4. Nomenclature / Type Recette resolution
     if (parsedTypeRecetteIds && !parsedNomenclatureIds) {
         try {
-            const noms = await (0, studentServiceClient_1.fetchStudentJson)('/nomenclatures', undefined, []);
+            const noms = await (0, etudiantServiceClient_1.fetchEtudiantJson)('/nomenclatures', undefined, []);
             if (Array.isArray(noms)) {
                 const matchingNoms = noms.filter((nom) => {
                     const trId = nom.typeRecetteId || nom.typeRecette?.id;

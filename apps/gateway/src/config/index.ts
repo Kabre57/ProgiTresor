@@ -7,7 +7,7 @@ const configSchema = z.object({
   JWT_SECRET: z.string().min(32),
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
   AUTH_SERVICE_URL: z.string().url().default('http://auth-service:5001'),
-  STUDENT_SERVICE_URL: z.string().url().default('http://student-service:5002'),
+  ETUDIANT_SERVICE_URL: z.string().url().default('http://etudiant-service:5002'),
   TRANSACTION_SERVICE_URL: z.string().url().default('http://transaction-service:5003'),
   ORDER_SERVICE_URL: z.string().url().default('http://order-service:5004'),
 });

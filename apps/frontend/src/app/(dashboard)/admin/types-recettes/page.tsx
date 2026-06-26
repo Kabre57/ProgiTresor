@@ -2,8 +2,8 @@
 
 import { Badge } from '@/components/ui/Badge';
 import { ReferentialPage } from '@/components/referentials/ReferentialPage';
-import { useReferential } from '@/lib/hooks/useStudentQueries';
-import type { TypeRecette } from '@/types/student.types';
+import { useReferential } from '@/lib/hooks/useEtudiantQueries';
+import type { TypeRecette } from '@/types/etudiant.types';
 
 export default function TypesRecettesPage() {
   const fluxQuery = useReferential('types-flux');

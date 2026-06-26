@@ -134,12 +134,12 @@ export const deleteTransaction = async (id: number) => {
   }
 };
 
-export const updateTransactionsStudentId = async (oldStudentId: number, newStudentId: number): Promise<number> => {
-  const end = dbQueryDuration.startTimer({ operation: 'transaction_merge_students' });
+export const updateTransactionsEtudiantId = async (oldEtudiantId: number, newEtudiantId: number): Promise<number> => {
+  const end = dbQueryDuration.startTimer({ operation: 'transaction_merge_etudiant' });
   try {
     const result = await prisma.transaction.updateMany({
-      where: { etudiantId: oldStudentId },
-      data: { etudiantId: newStudentId }
+      where: { etudiantId: oldEtudiantId },
+      data: { etudiantId: newEtudiantId }
     });
     return result.count;
   } finally {

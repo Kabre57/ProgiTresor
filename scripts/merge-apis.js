@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const services = ['auth-service', 'student-service', 'transaction-service', 'order-service'];
+const services = ['auth-service', 'etudiant-service', 'transaction-service', 'order-service'];
 const rootSpec = {
   openapi: '3.0.0',
   info: {
