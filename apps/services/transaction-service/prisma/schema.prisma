@@ -1,0 +1,63 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model ImportFichier {
+  id                Int           @id @default(autoincrement())
+  nomFichier        String        @map("nom_fichier") @db.VarChar(255)
+  typeFichier       String        @map("type_fichier") @db.VarChar(10)
+  auteurId          Int           @map("auteur_id")
+  dateImport        DateTime      @default(now()) @map("date_import") @db.Timestamptz
+  periodeDebut      DateTime?     @map("periode_debut") @db.Date
+  periodeFin        DateTime?     @map("periode_fin") @db.Date
+  nbLignesLues      Int?          @map("nb_lignes_lues")
+  nbLignesTraitees  Int?          @map("nb_lignes_traitees")
+  nbErreurs         Int?          @map("nb_erreurs")
+  statut            String        @default("TERMINE") @db.VarChar(20)
+  logsErreurs       String?       @map("logs_erreurs") @db.Text
+  transactions      Transaction[]
+
+  @@map("import_fichier")
+}
+
+model Transaction {
+  id                  BigInt        @id @default(autoincrement())
+  refTresor           String        @unique @map("ref_tresor") @db.VarChar(40)
+  dateHeure           DateTime      @map("date_heure") @db.Timestamptz
+  montant             BigInt        @db.BigInt
+  etudiantId          Int?          @map("etudiant_id")
+  antenneId           Int?          @map("antenne_id")
+  nomenclatureId      Int?          @map("nomenclature_id")
+  typeFluxId          Int?          @map("type_flux_id")
+  importId            Int           @map("import_id")
+  importFichier       ImportFichier @relation(fields: [importId], references: [id])
+  ordrePaiementId     Int?          @map("ordre_paiement_id")
+  mois                String?       @db.VarChar(15)
+  nomPayeurBrut       String?       @map("nom_payeur_brut") @db.VarChar(200)
+  libelleProduitBrut  String?       @map("libelle_produit_brut") @db.VarChar(200)
+  statutTraitement    String        @default("IMPORTE") @map("statut_traitement") @db.VarChar(20)
+  gele                Boolean       @default(false)
+  dateCreation        DateTime      @default(now()) @map("date_creation") @db.Timestamptz
+
+  @@index([importId])
+  @@index([refTresor])
+  @@index([dateHeure])
+  @@index([statutTraitement])
+  @@index([ordrePaiementId])
+  @@index([etudiantId])
+  @@index([antenneId])
+  @@map("transaction")
+}
+
+model OrdrePaiementMiroir {
+  id        Int      @id
+  codeOp    String   @unique @map("code_op") @db.VarChar(30)
+  statut    String   @db.VarChar(20)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("ordre_paiement_miroir")
+}

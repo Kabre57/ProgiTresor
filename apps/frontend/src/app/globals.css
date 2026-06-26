@@ -1,0 +1,21 @@
+@import "../assets/styles/app.css";
+
+/* ─── Sidebar High Contrast Overrides ─── */
+aside.bg-slate-900 a.text-gray-100,
+aside.bg-slate-900 button.text-gray-100 {
+  color: #e2e8f0 !important; /* text-slate-200 */
+}
+
+aside.bg-slate-900 a.text-gray-100:hover,
+aside.bg-slate-900 button.text-gray-100:hover {
+  background-color: #1e293b !important; /* bg-slate-800 */
+  color: #ffffff !important;
+}
+
+aside.bg-slate-900 .text-slate-400 {
+  color: #94a3b8 !important; /* text-slate-400 */
+}
+
+aside.bg-slate-900 .text-slate-500 {
+  color: #cbd5e1 !important; /* text-slate-300 */
+}

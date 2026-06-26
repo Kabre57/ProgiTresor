@@ -1,0 +1,60 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model SyntheseOP {
+  id               Int             @id @default(autoincrement())
+  reference        String          @unique @db.VarChar(40)
+  periodeDebut     DateTime        @map("periode_debut") @db.Date
+  periodeFin       DateTime        @map("periode_fin") @db.Date
+  typeFluxId       Int             @map("type_flux_id")
+  statut           String          @db.VarChar(25)
+  auteurId         Int             @map("auteur_id")
+  transmisParId    Int?            @map("transmis_par_id")
+  montantTotal     BigInt          @default(0) @map("montant_total") @db.BigInt
+  nbTransactions   Int             @default(0) @map("nb_transactions")
+  dateGeneration   DateTime        @default(now()) @map("date_generation") @db.Timestamptz
+  dateTransmission DateTime?       @map("date_transmission") @db.Timestamptz
+  ordresPaiement   OrdrePaiement[]
+
+  @@index([typeFluxId])
+  @@index([statut])
+  @@map("synthese_op")
+}
+
+model OrdrePaiement {
+  id                                    Int        @id @default(autoincrement())
+  codeOp                                String     @unique @map("code_op") @db.VarChar(30)
+  syntheseId                            Int        @map("synthese_id")
+  synthese                              SyntheseOP @relation(fields: [syntheseId], references: [id], onDelete: Cascade)
+  antenneId                             Int        @map("antenne_id")
+  filiereId                              Int        @map("filiere_id")
+  typeRecetteId                         Int        @map("type_recette_id")
+  montantCumule                         BigInt     @default(0) @map("montant_cumule") @db.BigInt
+  nombreFlux                            Int        @default(0) @map("nombre_flux")
+  statut                                String     @default("Brouillon") @db.VarChar(30)
+  creeParId                             Int        @map("cree_par_id")
+  valideParId                           Int?       @map("valide_par_id")
+  dateCreation                          DateTime   @default(now()) @map("date_creation") @db.Timestamptz
+  dateEmission                          DateTime?  @map("date_emission") @db.Timestamptz
+  dateTransmissionBudget                DateTime?  @map("date_transmission_budget") @db.Timestamptz
+  dateValidationChefComptable           DateTime?  @map("date_validation_chef_comptable") @db.Timestamptz
+  validateurChefComptableId             Int?       @map("validateur_chef_comptable_id")
+  dateApprobationDirecteurFinancier     DateTime?  @map("date_approbation_directeur_financier") @db.Timestamptz
+  approbateurDirecteurFinancierId       Int?       @map("approbateur_directeur_financier_id")
+  motifRejet                            String?    @map("motif_rejet") @db.Text
+  dateRejet                             DateTime?  @map("date_rejet") @db.Timestamptz
+  datePaiement                          DateTime?  @map("date_paiement") @db.Timestamptz
+
+  @@index([syntheseId])
+  @@index([codeOp])
+  @@index([antenneId])
+  @@index([filiereId])
+  @@index([typeRecetteId])
+  @@index([statut])
+  @@map("ordre_paiement")
+}

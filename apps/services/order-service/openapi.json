@@ -1,0 +1,81 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Order Service API",
+    "version": "1.0.0",
+    "description": "API for Payment Orders creation and workflow management"
+  },
+  "paths": {
+    "/generate": {
+      "post": {
+        "summary": "Generate payment orders through Saga orchestration",
+        "responses": {
+          "200": {
+            "description": "OPs generated successfully"
+          },
+          "500": {
+            "description": "Saga execution failed and changes rolled back"
+          }
+        }
+      }
+    },
+    "/{code}/status": {
+      "put": {
+        "summary": "Update payment order status",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "statut_op"
+                ],
+                "properties": {
+                  "statut_op": {
+                    "type": "string",
+                    "enum": [
+                      "Brouillon",
+                      "Transmis au Budget",
+                      "Validé",
+                      "Approuvé",
+                      "Rejeté",
+                      "Payé"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Status updated"
+          }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "summary": "Retrieve payment orders list",
+        "responses": {
+          "200": {
+            "description": "List of OPs"
+          }
+        }
+      }
+    }
+  },
+  "components": {},
+  "tags": []
+}

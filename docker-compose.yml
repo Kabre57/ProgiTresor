@@ -1,0 +1,147 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: progi-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5435:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: progi-redis
+    ports:
+      - "6381:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  gateway:
+    build: ./apps/gateway
+    container_name: progi-gateway
+    ports:
+      - "4000:4000"
+    environment:
+      - PORT=4000
+      - JWT_SECRET=${JWT_SECRET}
+      - NODE_ENV=production
+      - AUTH_SERVICE_URL=http://auth-service:5001
+      - STUDENT_SERVICE_URL=http://student-service:5002
+      - TRANSACTION_SERVICE_URL=http://transaction-service:5003
+      - ORDER_SERVICE_URL=http://order-service:5004
+    depends_on:
+      - auth-service
+      - student-service
+      - transaction-service
+      - order-service
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: apps/services/auth-service/Dockerfile
+    container_name: progi-auth-service
+    expose:
+      - "5001"
+    environment:
+      - PORT=5001
+      - DATABASE_URL=${DATABASE_URL_AUTH}
+      - JWT_SECRET=${JWT_SECRET}
+      - REFRESH_TOKEN_SECRET=${REFRESH_TOKEN_SECRET}
+      - DB_POOL_MAX=${DB_POOL_MAX:-20}
+      - NODE_ENV=production
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  student-service:
+    build:
+      context: .
+      dockerfile: apps/services/student-service/Dockerfile
+    container_name: progi-student-service
+    expose:
+      - "5002"
+    environment:
+      - PORT=5002
+      - DATABASE_URL=${DATABASE_URL_STUDENT}
+      - REDIS_URL=${REDIS_URL}
+      - DB_POOL_MAX=${DB_POOL_MAX:-20}
+      - NODE_ENV=production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  transaction-service:
+    build:
+      context: .
+      dockerfile: apps/services/transaction-service/Dockerfile
+    container_name: progi-transaction-service
+    expose:
+      - "5003"
+    environment:
+      - PORT=5003
+      - DATABASE_URL=${DATABASE_URL_TRANSACTION}
+      - STUDENT_SERVICE_URL=http://student-service:5002
+      - REDIS_URL=${REDIS_URL}
+      - DB_POOL_MAX=${DB_POOL_MAX:-20}
+      - NODE_ENV=production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  order-service:
+    build:
+      context: .
+      dockerfile: apps/services/order-service/Dockerfile
+    container_name: progi-order-service
+    expose:
+      - "5004"
+    environment:
+      - PORT=5004
+      - DATABASE_URL=${DATABASE_URL_ORDER}
+      - TRANSACTION_SERVICE_URL=http://transaction-service:5003
+      - STUDENT_SERVICE_URL=http://student-service:5002
+      - REDIS_URL=${REDIS_URL}
+      - DB_POOL_MAX=${DB_POOL_MAX:-20}
+      - NODE_ENV=production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_GATEWAY: http://localhost:4000/api
+    container_name: progi-frontend
+    ports:
+      - "3030:3030"
+    environment:
+      - PORT=3030
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_GATEWAY=http://localhost:4000/api
+    depends_on:
+      - gateway
+
+volumes:
+  pgdata:
