@@ -1,0 +1,63 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model OrdrePaiement {
+  id                         String                @id @default(cuid())
+  referenceOp                String                @unique @map("reference_op") @db.VarChar(40)
+  sourceBordereauId           Int                   @map("source_bordereau_id")
+  sourceLotTraitementId       Int                   @unique @map("source_lot_traitement_id")
+  referenceLot                String                @map("reference_lot") @db.VarChar(60)
+  montantTotal                Decimal               @map("montant_total") @db.Decimal(18, 2)
+  nombreLignes                Int                   @map("nombre_lignes")
+  statut                      String                @default("BROUILLON") @db.VarChar(30)
+  utilisateurCreation         String?               @map("utilisateur_creation") @db.VarChar(120)
+  utilisateurTransmission     String?               @map("utilisateur_transmission") @db.VarChar(120)
+  dateCreation                DateTime              @default(now()) @map("date_creation") @db.Timestamptz
+  dateTransmissionCompta      DateTime?             @map("date_transmission_compta") @db.Timestamptz
+  dateMiseAJour               DateTime              @updatedAt @map("date_mise_a_jour") @db.Timestamptz
+  lignes                      OrdrePaiementLigne[]
+  historique                  HistoriqueOrdrePaiement[]
+
+  @@index([statut, dateCreation])
+  @@index([sourceBordereauId])
+  @@map("ordre_paiement")
+}
+
+model OrdrePaiementLigne {
+  id                  Int            @id @default(autoincrement())
+  ordrePaiementId     String         @map("ordre_paiement_id")
+  ordrePaiement       OrdrePaiement  @relation(fields: [ordrePaiementId], references: [id], onDelete: Cascade)
+  sourceEcritureId    Int            @map("source_ecriture_id")
+  codeOt              String         @map("code_ot") @db.VarChar(40)
+  refTresor           String?        @map("ref_tresor") @db.VarChar(60)
+  produitLibelleBrut  String         @map("produit_libelle_brut") @db.VarChar(255)
+  typeRecetteId       Int?           @map("type_recette_id")
+  typeRecetteLibelle  String?        @map("type_recette_libelle") @db.VarChar(120)
+  montant             Decimal        @db.Decimal(18, 2)
+  matriculeEtudiant   String?        @map("matricule_etudiant") @db.VarChar(80)
+  dateFlux            DateTime       @map("date_flux") @db.Timestamptz
+  dateCreation        DateTime       @default(now()) @map("date_creation") @db.Timestamptz
+
+  @@unique([ordrePaiementId, sourceEcritureId])
+  @@index([codeOt])
+  @@index([sourceEcritureId])
+  @@map("ordre_paiement_ligne")
+}
+
+model HistoriqueOrdrePaiement {
+  id              Int            @id @default(autoincrement())
+  ordrePaiementId String         @map("ordre_paiement_id")
+  ordrePaiement   OrdrePaiement  @relation(fields: [ordrePaiementId], references: [id], onDelete: Cascade)
+  statut          String         @db.VarChar(30)
+  commentaire     String?        @db.Text
+  utilisateur     String?        @db.VarChar(120)
+  dateCreation    DateTime       @default(now()) @map("date_creation") @db.Timestamptz
+
+  @@index([ordrePaiementId, dateCreation])
+  @@map("historique_ordre_paiement")
+}

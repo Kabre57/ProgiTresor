@@ -1,0 +1,543 @@
+{
+  "info": {
+    "_postman_id": "e7b5a910-4f2c-4d88-9a7e-6c3e1b8d5f42",
+    "name": "ProgiTresor - transaction-service",
+    "description": "Tests Postman pour le microservice transaction-service. Importer aussi l'environnement local fourni dans ce dossier.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "System",
+      "item": [
+        {
+          "name": "GET /health",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('service is healthy', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.status).to.eql('ok');",
+                  "  pm.expect(json.service).to.eql('transaction-service');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{txBaseUrl}}/health",
+              "host": ["{{txBaseUrl}}"],
+              "path": ["health"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /metrics",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('contains prometheus metrics', function () {",
+                  "  pm.expect(pm.response.text()).to.include('transaction_http_request_duration_ms');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{txBaseUrl}}/metrics",
+              "host": ["{{txBaseUrl}}"],
+              "path": ["metrics"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Imports",
+      "item": [
+        {
+          "name": "GET /imports - list seeded imports",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('returns paginated import list', function () {",
+                  "  pm.expect(json.list).to.be.an('array');",
+                  "  pm.expect(json.list.length).to.be.at.least(1);",
+                  "  pm.expect(json).to.have.property('total');",
+                  "  pm.expect(json).to.have.property('limit');",
+                  "  pm.expect(json).to.have.property('offset');",
+                  "});",
+                  "",
+                  "pm.test('import has expected fields', function () {",
+                  "  const imp = json.list[0];",
+                  "  pm.expect(imp).to.have.property('id');",
+                  "  pm.expect(imp).to.have.property('nomFichier');",
+                  "  pm.expect(imp).to.have.property('typeFichier');",
+                  "  pm.expect(imp).to.have.property('statut');",
+                  "  pm.expect(imp).to.have.property('transactions');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{txBaseUrl}}/imports",
+              "host": ["{{txBaseUrl}}"],
+              "path": ["imports"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /imports/:id - seeded import detail",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('returns import with transactions', function () {",
+                  "  pm.expect(json.id).to.eql(Number(pm.environment.get('seedImportId')));",
+                  "  pm.expect(json.nomFichier).to.eql('TRESOR_PAY_2024_JANVIER.xlsx');",
+                  "  pm.expect(json.transactions).to.be.an('array');",
+                  "  pm.expect(json.transactions.length).to.be.at.least(2);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{txBaseUrl}}/imports/{{seedImportId}}",
+              "host": ["{{txBaseUrl}}"],
+              "path": ["imports", "{{seedImportId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /imports/:id - not found",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 404', function () { pm.response.to.have.status(404); });",
+                  "pm.test('returns error body', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.error.message).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{txBaseUrl}}/imports/99999",
+              "host": ["{{txBaseUrl}}"],
+              "path": ["imports", "99999"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /import - import transactions",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('import completed successfully', function () {",
+                  "  pm.expect(json.message).to.eql('Import process completed');",
+                  "  pm.expect(json).to.have.property('imported');",
+                  "  pm.expect(json).to.have.property('duplicatesSkipped');",
+                  "  pm.expect(json).to.have.property('importId');",
+                  "  pm.expect(json.imported).to.eql(2);",
+                  "});",
+                  "",
+                  "pm.environment.set('testImportId', String(json.importId));"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const suffix = Date.now();",
+                  "pm.environment.set('testRefTresor1', `PM-TR-${suffix}-001`);",
+                  "pm.environment.set('testRefTresor2', `PM-TR-${suffix}-002`);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nomFichier\": \"POSTMAN_TEST_IMPORT.xlsx\",\n  \"typeFichier\": \"XLSX\",\n  \"auteurId\": 1,\n  \"periodeDebut\": \"2024-02-01\",\n  \"periodeFin\": \"2024-02-28\",\n  \"items\": [\n    {\n      \"refTresor\": \"{{testRefTresor1}}\",\n      \"montant\": 25000,\n      \"dateHeure\": \"2024-02-10T09:00:00Z\",\n      \"etudiantId\": 1,\n      \"antenneId\": 1,\n      \"nomenclatureId\": 1,\n      \"typeFluxId\": 1,\n      \"mois\": \"FEVRIER\",\n      \"nomPayeurBrut\": \"POSTMAN PAYEUR\",\n      \"libelleProduitBrut\": \"FRAIS DE SCOLARITE TEST\"\n    },\n    {\n      \"refTresor\": \"{{testRefTresor2}}\",\n      \"montant\": 10000,\n      \"dateHeure\": \"2024-02-15T14:30:00Z\",\n      \"etudiantId\": 2,\n      \"antenneId\": 2,\n      \"nomenclatureId\": 3,\n      \"typeFluxId\": 2,\n      \"mois\": \"FEVRIER\",\n      \"nomPayeurBrut\": \"POSTMAN PAYEUR 2\",\n      \"libelleProduitBrut\": \"FRAIS ENCADREMENT TEST\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{txBaseUrl}}/import",
+              "host": ["{{txBaseUrl}}"],
+              "path": ["import"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /import - validation error (empty items)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 400', function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nomFichier\": \"BAD_IMPORT.xlsx\",\n  \"typeFichier\": \"XLSX\",\n  \"auteurId\": 1,\n  \"items\": []\n}"
+            },
+            "url": {
+              "raw": "{{txBaseUrl}}/import",
+              "host": ["{{txBaseUrl}}"],
+              "path": ["import"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Transactions",
+      "item": [
+        {
+          "name": "GET / - list transactions (paginated)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('returns paginated transaction list', function () {",
+                  "  pm.expect(json.list).to.be.an('array');",
+                  "  pm.expect(json.list.length).to.be.at.least(2);",
+                  "  pm.expect(json).to.have.property('total');",
+                  "  pm.expect(json).to.have.property('limit');",
+                  "  pm.expect(json).to.have.property('offset');",
+                  "});",
+                  "",
+                  "pm.test('transaction has expected fields', function () {",
+                  "  const tx = json.list[0];",
+                  "  pm.expect(tx).to.have.property('id');",
+                  "  pm.expect(tx).to.have.property('refTresor');",
+                  "  pm.expect(tx).to.have.property('montant');",
+                  "  pm.expect(tx).to.have.property('dateHeure');",
+                  "  pm.expect(tx).to.have.property('statutTraitement');",
+                  "  pm.expect(tx).to.have.property('importFichier');",
+                  "});",
+                  "",
+                  "// Store unassigned transaction ids for link-ot test",
+                  "const unassigned = json.list.filter(tx => tx.ordreTraitementId === null);",
+                  "if (unassigned.length > 0) {",
+                  "  pm.environment.set('testTransactionIds', JSON.stringify(unassigned.slice(0, 2).map(tx => Number(tx.id))));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{txBaseUrl}}/?limit=50&offset=0",
+              "host": ["{{txBaseUrl}}"],
+              "path": [""],
+              "query": [
+                { "key": "limit", "value": "50" },
+                { "key": "offset", "value": "0" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /unassigned - hors budget unassigned",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('returns array of unassigned transactions', function () {",
+                  "  pm.expect(json).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('all returned transactions are unassigned and hors budget', function () {",
+                  "  json.forEach(function (tx) {",
+                  "    pm.expect(tx.ordreTraitementId).to.be.null;",
+                  "    pm.expect(tx.typeFluxId).to.eql(2);",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{txBaseUrl}}/unassigned",
+              "host": ["{{txBaseUrl}}"],
+              "path": ["unassigned"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "OT Linking",
+      "item": [
+        {
+          "name": "POST /link-ot - link transactions to OT",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const suffix = Date.now();",
+                  "pm.environment.set('testCodeOt', `OT-PM-${suffix}`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// This may fail if no unassigned transactions exist; that is expected",
+                  "if (pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test('linked successfully', function () {",
+                  "    pm.expect(json.message).to.eql('Linked successfully');",
+                  "    pm.expect(json.updatedCount).to.be.at.least(1);",
+                  "  });",
+                  "} else {",
+                  "  pm.test('response is 400 (already linked or no IDs)', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ordreTraitementId\": 100,\n  \"codeOt\": \"{{testCodeOt}}\",\n  \"transactionIds\": {{testTransactionIds}}\n}"
+            },
+            "url": {
+              "raw": "{{txBaseUrl}}/link-ot",
+              "host": ["{{txBaseUrl}}"],
+              "path": ["link-ot"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /link-ot - validation error (missing fields)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 400', function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ordreTraitementId\": 1\n}"
+            },
+            "url": {
+              "raw": "{{txBaseUrl}}/link-ot",
+              "host": ["{{txBaseUrl}}"],
+              "path": ["link-ot"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /unlink-ot - unlink transactions from OT",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('unlinked successfully', function () {",
+                  "  pm.expect(json.message).to.eql('Unlinked successfully');",
+                  "  pm.expect(json).to.have.property('count');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ordreTraitementId\": 100\n}"
+            },
+            "url": {
+              "raw": "{{txBaseUrl}}/unlink-ot",
+              "host": ["{{txBaseUrl}}"],
+              "path": ["unlink-ot"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /ot-status - sync OT status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('OT status synced', function () {",
+                  "  pm.expect(json).to.have.property('id');",
+                  "  pm.expect(json).to.have.property('codeOt');",
+                  "  pm.expect(json.statut).to.eql('Validé');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ordreTraitementId\": {{seedOrdreTraitementId}},\n  \"codeOt\": \"{{seedCodeOt}}\",\n  \"statut\": \"Validé\"\n}"
+            },
+            "url": {
+              "raw": "{{txBaseUrl}}/ot-status",
+              "host": ["{{txBaseUrl}}"],
+              "path": ["ot-status"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.environment.get('txBaseUrl')) {",
+          "  throw new Error('Missing Postman environment variable: txBaseUrl');",
+          "}"
+        ]
+      }
+    }
+  ]
+}

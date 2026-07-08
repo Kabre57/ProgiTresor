@@ -1,0 +1,17 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model AnalyseArchive {
+  id          Int      @id @default(autoincrement())
+  reference   String   @unique @db.VarChar(60)
+  pdfUrl      String?  @map("pdf_url") @db.VarChar(500)
+  createdById Int      @map("created_by_id")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@map("analyse_archive")
+}

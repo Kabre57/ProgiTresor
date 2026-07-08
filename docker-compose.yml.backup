@@ -1,0 +1,279 @@
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: progi-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5435:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: progi-redis
+    ports:
+      - "6381:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: progi-minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"   # API S3
+      - "9001:9001"   # Console d'administration Web
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  gateway:
+    build: ./apps/gateway
+    container_name: progi-gateway
+    ports:
+      - "4000:4000"
+    environment:
+      - PORT=4000
+      - JWT_SECRET=${JWT_SECRET}
+      - REDIS_URL=${REDIS_URL}
+      - NODE_ENV=production
+      - AUTH_SERVICE_URL=http://auth-service:5001
+      - ETUDIANT_SERVICE_URL=http://etudiant-service:5002
+      - TRANSACTION_SERVICE_URL=http://transaction-service:5003
+      - ORDER_SERVICE_URL=http://order-service:5004
+      - ANALYSE_SERVICE_URL=http://analyse-service:5005
+      - COMPTA_SERVICE_URL=http://compta-service:5006
+      - BUDGET_SERVICE_URL=http://budget-service:5007
+      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET}
+    depends_on:
+      redis:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+      etudiant-service:
+        condition: service_started
+      transaction-service:
+        condition: service_started
+      order-service:
+        condition: service_started
+      analyse-service:
+        condition: service_started
+      compta-service:
+        condition: service_started
+      budget-service:
+        condition: service_started
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: apps/services/auth-service/Dockerfile
+    container_name: progi-auth-service
+    expose:
+      - "5001"
+    environment:
+      - PORT=5001
+      - DATABASE_URL=${DATABASE_URL_AUTH}
+      - REDIS_URL=${REDIS_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - REFRESH_TOKEN_SECRET=${REFRESH_TOKEN_SECRET}
+      - DB_POOL_MAX=${DB_POOL_MAX:-20}
+      - NODE_ENV=production
+      - RUN_SEED=true
+      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  etudiant-service:
+    build:
+      context: .
+      dockerfile: apps/services/etudiant-service/Dockerfile
+    container_name: progi-etudiant-service
+    expose:
+      - "5002"
+    environment:
+      - PORT=5002
+      - DATABASE_URL=${DATABASE_URL_ETUDIANT}
+      - REDIS_URL=${REDIS_URL}
+      - DB_POOL_MAX=${DB_POOL_MAX:-20}
+      - NODE_ENV=production
+      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  transaction-service:
+    build:
+      context: .
+      dockerfile: apps/services/transaction-service/Dockerfile
+    container_name: progi-transaction-service
+    expose:
+      - "5003"
+    environment:
+      - PORT=5003
+      - DATABASE_URL=${DATABASE_URL_TRANSACTION}
+      - ETUDIANT_SERVICE_URL=http://etudiant-service:5002
+      - REDIS_URL=${REDIS_URL}
+      - DB_POOL_MAX=${DB_POOL_MAX:-20}
+      - NODE_ENV=production
+      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  order-service:
+    build:
+      context: .
+      dockerfile: apps/services/order-service/Dockerfile
+    container_name: progi-order-service
+    expose:
+      - "5004"
+    environment:
+      - PORT=5004
+      - DATABASE_URL=${DATABASE_URL_ORDER}
+      - TRANSACTION_SERVICE_URL=http://transaction-service:5003
+      - ETUDIANT_SERVICE_URL=http://etudiant-service:5002
+      - REDIS_URL=${REDIS_URL}
+      - COMPTA_SERVICE_URL=http://compta-service:5006
+      - BUDGET_SERVICE_URL=http://budget-service:5007
+      - DB_POOL_MAX=${DB_POOL_MAX:-20}
+      - NODE_ENV=production
+      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET}
+      - OUTBOX_WORKER_INTERVAL_MS=100
+      - OUTBOX_BATCH_SIZE=200
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  analyse-service:
+    build:
+      context: .
+      dockerfile: apps/services/analyse-service/Dockerfile
+    container_name: progi-analyse-service
+    expose:
+      - "5005"
+    environment:
+      - PORT=5005
+      - DATABASE_URL=${DATABASE_URL_ANALYSE}
+      - TRANSACTION_SERVICE_URL=http://transaction-service:5003
+      - ETUDIANT_SERVICE_URL=http://etudiant-service:5002
+      - ORDER_SERVICE_URL=http://order-service:5004
+      - DB_POOL_MAX=${DB_POOL_MAX:-20}
+      - PDF_STORAGE_TYPE=s3
+      - PDF_BUCKET_NAME=progi-pdfs
+      - S3_ENDPOINT=http://minio:9000
+      - S3_ACCESS_KEY=${MINIO_ROOT_USER:-minioadmin}
+      - S3_SECRET_KEY=${MINIO_ROOT_PASSWORD:-minioadmin}
+      - S3_REGION=us-east-1
+      - PDF_PUBLIC_BASE_URL=${PDF_PUBLIC_BASE_URL:-/api/analyse}
+      - PDF_UPLOAD_ROOT=/app/apps/services/analyse-service/uploads
+      - NODE_ENV=production
+      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET}
+    volumes:
+      - analyse_pdfs:/app/apps/services/analyse-service/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      transaction-service:
+        condition: service_started
+      etudiant-service:
+        condition: service_started
+      order-service:
+        condition: service_started
+
+  compta-service:
+    build:
+      context: .
+      dockerfile: apps/services/compta-service/Dockerfile
+    container_name: progi-compta-service
+    expose:
+      - "5006"
+    environment:
+      - PORT=5006
+      - DATABASE_URL=${DATABASE_URL_COMPTA}
+      - TRANSACTION_SERVICE_URL=http://transaction-service:5003
+      - BUDGET_SERVICE_URL=http://budget-service:5007
+      - REDIS_URL=${REDIS_URL}
+      - DB_POOL_MAX=${DB_POOL_MAX:-20}
+      - NODE_ENV=production
+      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  budget-service:
+    build:
+      context: .
+      dockerfile: apps/services/budget-service/Dockerfile
+    container_name: progi-budget-service
+    expose:
+      - "5007"
+    environment:
+      - PORT=5007
+      - DATABASE_URL=${DATABASE_URL_BUDGET}
+      - COMPTA_SERVICE_URL=http://compta-service:5006
+      - REDIS_URL=${REDIS_URL}
+      - DB_POOL_MAX=${DB_POOL_MAX:-20}
+      - NODE_ENV=production
+      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      compta-service:
+        condition: service_started
+
+  frontend:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_GATEWAY: http://localhost:4000/api
+    container_name: progi-frontend
+    ports:
+      - "3030:3030"
+    environment:
+      - PORT=3030
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_GATEWAY=http://localhost:4000/api
+    depends_on:
+      - gateway
+
+volumes:
+  pgdata:
+  analyse_pdfs:
+  minio_data:
+    driver: local

@@ -1,0 +1,30 @@
+# Git
+.git/
+
+# Env files
+.env
+.env.*
+!.env.example
+
+# Node deps (partout, dont apps/*)
+**/node_modules/
+
+# Build outputs (partout)
+**/dist/
+**/build/
+**/out/
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db

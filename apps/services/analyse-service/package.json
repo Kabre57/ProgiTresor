@@ -1,0 +1,47 @@
+{
+  "name": "progi-teck-analyse-service",
+  "version": "1.0.0",
+  "main": "dist/apps/services/analyse-service/src/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/apps/services/analyse-service/src/index.js",
+    "dev": "ts-node src/index.ts",
+    "db:migrate": "prisma migrate dev --name sync_schema",
+    "generate:docs": "ts-node src/generate-docs.ts",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.554.0",
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "axios": "^1.6.8",
+    "axios-retry": "^4.1.0",
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "pdfkit": "^0.19.1",
+    "pg": "^8.21.0",
+    "pino": "^8.21.0",
+    "pino-pretty": "^11.0.0",
+    "prisma": "^7.8.0",
+    "prom-client": "^15.1.0",
+    "redis": "^4.6.13",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^20.19.43",
+    "@types/pdfkit": "^0.17.6",
+    "@types/supertest": "^7.2.0",
+    "@types/swagger-jsdoc": "^6.0.4",
+    "@types/swagger-ui-express": "^4.1.7",
+    "jest": "^30.4.2",
+    "supertest": "^7.2.2",
+    "ts-jest": "^29.4.11",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "cSpell.language": "en,fr",
+  "cSpell.words": [
+    "autoincrement",
+    "Timestamptz"
+  ],
+  "cSpell.ignorePaths": [
+    "**/node_modules/**",
+    "**/package-lock.json",
+    "**/*.prisma"
+  ]
+}

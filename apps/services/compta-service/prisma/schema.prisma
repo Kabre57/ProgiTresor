@@ -1,0 +1,169 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model EcritureComptable {
+  id             String    @id @default(cuid())
+  codeOt         String    @map("code_ot") @db.VarChar(50)
+  dateEcriture   DateTime  @default(now()) @map("date_ecriture") @db.Timestamptz
+  compteDebit    String    @map("compte_debit") @db.VarChar(10)
+  compteCredit   String    @map("compte_credit") @db.VarChar(10)
+  montant        Decimal   @map("montant") @db.Decimal(15, 2)
+  libelle        String    @map("libelle") @db.VarChar(200)
+  statut         String    @default("BROUILLON") @map("statut") @db.VarChar(20)
+  justification  String?   @map("justification") @db.Text
+  dateCreation   DateTime  @default(now()) @map("date_creation") @db.Timestamptz
+  dateValidation DateTime? @map("date_validation") @db.Timestamptz
+
+  @@map("ecriture_comptable")
+}
+
+model LigneBudgetaire {
+  id               Int                    @id @default(autoincrement())
+  code             String                 @db.VarChar(100)
+  libelle          String                 @db.VarChar(255)
+  anneeBudgetaire  Int                    @map("annee_budgetaire")
+  montantAlloue    Decimal                @default(0) @map("montant_alloue") @db.Decimal(18, 2)
+  montantUtilise   Decimal                @default(0) @map("montant_utilise") @db.Decimal(18, 2)
+  dateCreation     DateTime               @default(now()) @map("date_creation") @db.Timestamptz
+  dateMiseAJour    DateTime               @updatedAt @map("date_mise_a_jour") @db.Timestamptz
+  imputations      ImputationBudgetaire[]
+
+  @@unique([code, anneeBudgetaire])
+  @@index([anneeBudgetaire])
+  @@map("ligne_budgetaire")
+}
+
+model Bordereau {
+  id                     Int                  @id @default(autoincrement())
+  reference              String               @unique @db.VarChar(80)
+  sourceService          String               @default("order-service") @map("source_service") @db.VarChar(80)
+  statut                 String               @default("EN_ATTENTE") @db.VarChar(30)
+  anneeBudgetaire        Int                  @map("annee_budgetaire")
+  utilisateurTransmission String?             @map("utilisateur_transmission") @db.VarChar(120)
+  utilisateurTraitement  String?              @map("utilisateur_traitement") @db.VarChar(120)
+  montantTotal           Decimal              @default(0) @map("montant_total") @db.Decimal(18, 2)
+  nombreOt               Int                  @default(0) @map("nombre_ot")
+  nombreEcritures        Int                  @default(0) @map("nombre_ecritures")
+  dateReception          DateTime             @default(now()) @map("date_reception") @db.Timestamptz
+  dateTraitement         DateTime?            @map("date_traitement") @db.Timestamptz
+  remarques              String?              @db.Text
+  dateMiseAJour          DateTime             @updatedAt @map("date_mise_a_jour") @db.Timestamptz
+  ecritures              EcritureBudgetaire[]
+  lots                   LotTraitement[]
+  controles              ControleOpOt[]
+
+  @@index([statut, dateReception])
+  @@index([anneeBudgetaire])
+  @@map("bordereau")
+}
+
+model EcritureBudgetaire {
+  id                    Int                      @id @default(autoincrement())
+  bordereauId           Int                      @map("bordereau_id")
+  bordereau             Bordereau                @relation(fields: [bordereauId], references: [id], onDelete: Cascade)
+  ordreTraitementId     Int?                     @map("ordre_traitement_id")
+  codeOt                String                   @map("code_ot") @db.VarChar(40)
+  transactionId         BigInt?                  @map("transaction_id")
+  refTresor             String?                  @map("ref_tresor") @db.VarChar(60)
+  produitLibelleBrut    String                   @map("produit_libelle_brut") @db.VarChar(255)
+  typeRecetteId         Int?                     @map("type_recette_id")
+  typeRecetteLibelle    String?                  @map("type_recette_libelle") @db.VarChar(120)
+  antenneId             Int?                     @map("antenne_id")
+  montant               Decimal                  @db.Decimal(18, 2)
+  dateFlux              DateTime                 @map("date_flux") @db.Timestamptz
+  matriculeEtudiant     String?                  @map("matricule_etudiant") @db.VarChar(80)
+  detailsComplementaires Json?                   @map("details_complementaires")
+  statut                String                   @default("EN_ATTENTE") @db.VarChar(30)
+  dateCreation          DateTime                 @default(now()) @map("date_creation") @db.Timestamptz
+  dateMiseAJour         DateTime                 @updatedAt @map("date_mise_a_jour") @db.Timestamptz
+  lots                  LotTraitementEcriture[]
+  imputations           ImputationBudgetaire[]
+
+  @@unique([bordereauId, transactionId])
+  @@index([bordereauId])
+  @@index([codeOt])
+  @@index([transactionId])
+  @@index([dateFlux])
+  @@index([statut])
+  @@map("ecriture_budgetaire")
+}
+
+model LotTraitement {
+  id               Int                      @id @default(autoincrement())
+  bordereauId      Int                      @map("bordereau_id")
+  bordereau        Bordereau                @relation(fields: [bordereauId], references: [id], onDelete: Cascade)
+  reference        String                   @unique @db.VarChar(80)
+  statut           String                   @default("EN_ATTENTE") @db.VarChar(30)
+  dateDebutFlux    DateTime?                @map("date_debut_flux") @db.Timestamptz
+  dateFinFlux      DateTime?                @map("date_fin_flux") @db.Timestamptz
+  typeRecetteId    Int?                     @map("type_recette_id")
+  antenneId        Int?                     @map("antenne_id")
+  montantTotal     Decimal                  @default(0) @map("montant_total") @db.Decimal(18, 2)
+  nombreEcritures  Int                      @default(0) @map("nombre_ecritures")
+  dateCreation     DateTime                 @default(now()) @map("date_creation") @db.Timestamptz
+  dateTraitement   DateTime?                @map("date_traitement") @db.Timestamptz
+  dateTransmissionBudget DateTime?          @map("date_transmission_budget") @db.Timestamptz
+  dateMiseAJour    DateTime                 @updatedAt @map("date_mise_a_jour") @db.Timestamptz
+  ecritures        LotTraitementEcriture[]
+  controles        ControleOpOt[]
+
+  @@index([bordereauId])
+  @@index([statut, dateCreation])
+  @@map("lot_traitement")
+}
+
+model LotTraitementEcriture {
+  lotTraitementId     Int                  @map("lot_traitement_id")
+  ecritureBudgetaireId Int                 @map("ecriture_budgetaire_id")
+  lotTraitement       LotTraitement        @relation(fields: [lotTraitementId], references: [id], onDelete: Cascade)
+  ecritureBudgetaire  EcritureBudgetaire   @relation(fields: [ecritureBudgetaireId], references: [id], onDelete: Cascade)
+
+  @@id([lotTraitementId, ecritureBudgetaireId])
+  @@index([ecritureBudgetaireId])
+  @@map("lot_traitement_ecriture")
+}
+
+model ImputationBudgetaire {
+  id                   Int                 @id @default(autoincrement())
+  ecritureBudgetaireId Int                 @map("ecriture_budgetaire_id")
+  ligneBudgetaireId    Int                 @map("ligne_budgetaire_id")
+  ecritureBudgetaire   EcritureBudgetaire  @relation(fields: [ecritureBudgetaireId], references: [id], onDelete: Cascade)
+  ligneBudgetaire      LigneBudgetaire     @relation(fields: [ligneBudgetaireId], references: [id])
+  montantImpute        Decimal             @map("montant_impute") @db.Decimal(18, 2)
+  utilisateurImputation String?            @map("utilisateur_imputation") @db.VarChar(120)
+  remarques            String?             @db.Text
+  dateImputation       DateTime            @default(now()) @map("date_imputation") @db.Timestamptz
+  dateCreation         DateTime            @default(now()) @map("date_creation") @db.Timestamptz
+
+  @@index([ecritureBudgetaireId])
+  @@index([ligneBudgetaireId])
+  @@map("imputation_budgetaire")
+}
+
+model ControleOpOt {
+  id                Int            @id @default(autoincrement())
+  ordrePaiementId   String         @map("ordre_paiement_id") @db.VarChar(80)
+  referenceOp       String         @map("reference_op") @db.VarChar(40)
+  bordereauId       Int            @map("bordereau_id")
+  lotTraitementId   Int            @map("lot_traitement_id")
+  bordereau         Bordereau      @relation(fields: [bordereauId], references: [id], onDelete: Cascade)
+  lotTraitement     LotTraitement  @relation(fields: [lotTraitementId], references: [id], onDelete: Cascade)
+  montantOt         Decimal        @map("montant_ot") @db.Decimal(18, 2)
+  montantOp         Decimal        @map("montant_op") @db.Decimal(18, 2)
+  nombreLignesOt    Int            @map("nombre_lignes_ot")
+  nombreLignesOp    Int            @map("nombre_lignes_op")
+  ecart             Decimal        @db.Decimal(18, 2)
+  statutControle    String         @default("A_CONTROLER") @map("statut_controle") @db.VarChar(30)
+  dateControle      DateTime       @default(now()) @map("date_controle") @db.Timestamptz
+
+  @@unique([ordrePaiementId, lotTraitementId])
+  @@index([bordereauId])
+  @@index([lotTraitementId])
+  @@index([statutControle])
+  @@map("controle_op_ot")
+}

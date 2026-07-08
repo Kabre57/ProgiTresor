@@ -1,0 +1,221 @@
+{
+  "info": {
+    "_postman_id": "8ee8f55d-33d0-45f3-9d8a-progitresor-frontend",
+    "name": "ProgiTresor Gateway - Frontend Smoke Tests",
+    "description": "Smoke tests Postman pour les endpoints consommes par apps/frontend via le gateway.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{access_token}}", "type": "string" }]
+  },
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test('Response time < 3000ms', function () {",
+          "  pm.expect(pm.response.responseTime).to.be.below(3000);",
+          "});"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": "{{gateway_api}}/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login OK', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('Tokens returned', function () {",
+                  "  pm.expect(json.token).to.be.a('string').and.not.empty;",
+                  "  pm.expect(json.refreshToken).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.environment.set('access_token', json.token);",
+                  "pm.environment.set('refresh_token', json.refreshToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Me",
+          "request": { "method": "GET", "url": "{{gateway_api}}/auth/me" },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Profile OK', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Profile has role', function () { pm.expect(pm.response.json().role.code).to.be.a('string'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Users page",
+          "request": { "method": "GET", "url": "{{gateway_api}}/users?page=1&limit=10" },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Users endpoint responds', function () { pm.expect([200, 403]).to.include(pm.response.code); });",
+                  "if (pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.data).to.be.an('array');",
+                  "  pm.expect(json.total).to.be.a('number');",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02 Student",
+      "item": [
+        {
+          "name": "Antennes",
+          "request": { "method": "GET", "url": "{{gateway_api}}/students/antennes" },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Antennes reachable', function () { pm.expect([200, 403]).to.include(pm.response.code); });",
+                  "if (pm.response.code === 200) pm.expect(pm.response.json()).to.be.an('array');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Niveaux",
+          "request": { "method": "GET", "url": "{{gateway_api}}/students/niveaux" },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Niveaux reachable', function () { pm.expect([200, 403]).to.include(pm.response.code); });",
+                  "if (pm.response.code === 200) pm.expect(pm.response.json()).to.be.an('array');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Student by matricule",
+          "request": { "method": "GET", "url": "{{gateway_api}}/students/{{student_matricule}}" },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Student lookup status is expected', function () { pm.expect([200, 403, 404]).to.include(pm.response.code); });",
+                  "if (pm.response.code === 200) pm.expect(pm.response.json().matricule).to.be.a('string');"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 Operations",
+      "item": [
+        {
+          "name": "Transactions list",
+          "request": { "method": "GET", "url": "{{gateway_api}}/transactions?limit=10&offset=0" },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Transactions reachable', function () { pm.expect([200, 403]).to.include(pm.response.code); });",
+                  "if (pm.response.code === 200) pm.expect(pm.response.json().list).to.be.an('array');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Orders list",
+          "request": { "method": "GET", "url": "{{gateway_api}}/orders" },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Orders reachable', function () { pm.expect([200, 403]).to.include(pm.response.code); });",
+                  "if (pm.response.code === 200) pm.expect(pm.response.json()).to.be.an('array');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Comptes list",
+          "request": { "method": "GET", "url": "{{gateway_api}}/comptes?page=1&limit=10" },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Comptes reachable', function () { pm.expect([200, 403]).to.include(pm.response.code); });",
+                  "if (pm.response.code === 200) pm.expect(pm.response.json().data).to.be.an('array');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ecritures list",
+          "request": { "method": "GET", "url": "{{gateway_api}}/ecritures?page=1&limit=10" },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Ecritures reachable', function () { pm.expect([200, 403]).to.include(pm.response.code); });",
+                  "if (pm.response.code === 200) pm.expect(pm.response.json().data).to.be.an('array');"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

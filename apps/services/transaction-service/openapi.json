@@ -1,0 +1,97 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Transaction Service API",
+    "version": "1.0.0",
+    "description": "API for Transaction imports, cleanups, and queries"
+  },
+  "paths": {
+    "/import": {
+      "post": {
+        "summary": "Import a list of transactions",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "reference_tresor",
+                    "montant",
+                    "date_heure",
+                    "produit"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Import finished successfully"
+          }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "summary": "Retrieve transactions list",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of transactions"
+          }
+        }
+      }
+    },
+    "/unassigned": {
+      "get": {
+        "summary": "Retrieve unassigned Hors Budget transactions",
+        "responses": {
+          "200": {
+            "description": "Unassigned list"
+          }
+        }
+      }
+    },
+    "/link-ot": {
+      "post": {
+        "summary": "Link transactions to an OT code",
+        "responses": {
+          "200": {
+            "description": "Linked successfully"
+          }
+        }
+      }
+    },
+    "/unlink-ot": {
+      "post": {
+        "summary": "Unlink transactions from an OT",
+        "responses": {
+          "200": {
+            "description": "Unlinked successfully"
+          }
+        }
+      }
+    }
+  },
+  "components": {},
+  "tags": []
+}

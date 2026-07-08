@@ -1,0 +1,2 @@
+ALTER TABLE "nomenclature_produit"
+ADD COLUMN IF NOT EXISTS "montant" INTEGER NOT NULL DEFAULT 0;

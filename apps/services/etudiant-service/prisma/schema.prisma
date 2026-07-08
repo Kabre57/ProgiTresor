@@ -1,0 +1,172 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Antenne {
+  id        Int        @id @default(autoincrement())
+  code      String     @unique @db.VarChar(10)
+  nom       String     @unique @db.VarChar(80)
+  ville     String     @db.VarChar(60)
+  actif     Boolean    @default(true)
+  etudiant Etudiant[]
+
+  @@map("antenne")
+}
+
+model Filiere {
+  id      Int      @id @default(autoincrement())
+  code    String   @unique @db.VarChar(10)
+  libelle String   @db.VarChar(60)
+  niveaux Niveau[]
+
+  @@map("filiere")
+}
+
+model Niveau {
+  id            Int                   @id @default(autoincrement())
+  code          String                @unique @db.VarChar(10)
+  libelle       String                @db.VarChar(60)
+  cycle         String                @db.VarChar(30)
+  anneeEtude    Int                   @map("annee_etude") @db.SmallInt
+  filiereId     Int?                  @map("filiere_id")
+  filiere       Filiere?              @relation(fields: [filiereId], references: [id])
+  etudiant      Etudiant[]
+  nomenclatures NomenclatureProduit[]
+  configurations ConfigurationFraisNiveau[]
+
+  @@map("niveau")
+}
+
+model StatutEtudiant {
+  id              Int                    @id @default(autoincrement())
+  code            String                 @unique @db.VarChar(20)
+  libelle         String                 @db.VarChar(60)
+  etudiant       Etudiant[]
+  nomenclatures   NomenclatureProduit[]
+  configurations ConfigurationFraisNiveau[]
+
+  @@map("statut_etudiant")
+}
+
+model Promotion {
+  id        Int        @id @default(autoincrement())
+  nom       String     @unique @db.VarChar(50)
+  ordre     Int        @db.SmallInt
+  actif     Boolean    @default(true)
+  etudiant Etudiant[]
+
+  @@map("promotion")
+}
+
+model Etudiant {
+  id               Int            @id @default(autoincrement())
+  matricule        String         @unique @db.VarChar(30)
+  nom              String         @db.VarChar(75)
+  prenom           String         @db.VarChar(75)
+  prefixeMatricule String?        @map("prefixe_matricule") @db.VarChar(10)
+  promotionString  String?        @map("promotion") @db.VarChar(50)
+  promotionId      Int?           @map("promotion_id")
+  promotion        Promotion?     @relation(fields: [promotionId], references: [id])
+  antenneId        Int            @map("antenne_id")
+  antenne          Antenne        @relation(fields: [antenneId], references: [id])
+  niveauId          Int            @map("niveau_id")
+  niveau            Niveau         @relation(fields: [niveauId], references: [id])
+  statutId         Int            @map("statut_id")
+  statut           StatutEtudiant @relation(fields: [statutId], references: [id])
+  photoUrl         String?        @map("photo_url") @db.Text
+  dateCreation     DateTime       @default(now()) @map("date_creation") @db.Timestamptz
+  matriculeTresorPay String?      @unique @map("matricule_tresor_pay") @db.VarChar(50)
+  estTemporaire    Boolean        @default(false) @map("est_temporaire")
+  notificationsTemporaires NotificationEtudiantTemporaire[]
+
+  @@index([antenneId])
+  @@index([niveauId])
+  @@index([statutId])
+  @@index([nom])
+  @@index([prenom])
+  @@index([promotionString])
+  @@index([promotionId])
+  @@map("etudiant")
+}
+
+model NotificationEtudiantTemporaire {
+  id                  Int      @id @default(autoincrement())
+  dateCreation        DateTime @default(now()) @map("date_creation") @db.Timestamptz
+  matriculeTresorPay   String   @map("matricule_tresor_pay") @db.VarChar(50)
+  nomPayeur           String   @map("nom_payeur") @db.VarChar(200)
+  etudiantTemporaireId Int      @map("etudiant_temporaire_id")
+  etudiantTemporaire  Etudiant @relation(fields: [etudiantTemporaireId], references: [id], onDelete: Cascade)
+  traite              Boolean  @default(false)
+
+  @@index([etudiantTemporaireId])
+  @@map("notification_etudiant_temporaire")
+}
+
+model TypeFlux {
+  id      Int           @id @default(autoincrement())
+  code    String        @unique @db.VarChar(20)
+  libelle String        @db.VarChar(60)
+  recettes TypeRecette[]
+
+  @@map("type_flux")
+}
+
+model TypeRecette {
+  id             Int                   @id @default(autoincrement())
+  code           String                @unique @db.VarChar(30)
+  libelle        String                @db.VarChar(120)
+  typeFluxId     Int                   @map("type_flux_id")
+  typeFlux       TypeFlux              @relation(fields: [typeFluxId], references: [id])
+  nomenclatures NomenclatureProduit[]
+
+  @@index([typeFluxId])
+  @@map("type_recette")
+}
+
+model NomenclatureProduit {
+  id              Int             @id @default(autoincrement())
+  libelleBrut     String          @unique @map("libelle_brut") @db.VarChar(200)
+  codeProduit     String          @map("code_produit") @db.VarChar(100)
+  libelleStandard String          @map("libelle_standard") @db.VarChar(150)
+  typeRecetteId   Int             @map("type_recette_id")
+  typeRecette     TypeRecette     @relation(fields: [typeRecetteId], references: [id])
+  niveauId         Int?            @map("niveau_id")
+  niveau           Niveau?         @relation(fields: [niveauId], references: [id])
+  statutId        Int?            @map("statut_id")
+  statut          StatutEtudiant? @relation(fields: [statutId], references: [id])
+  numVersement    Int?            @map("num_versement") @db.SmallInt
+  montant         Int             @default(0)
+  actif           Boolean         @default(true)
+  regexPattern    String?         @map("regex_pattern") @db.VarChar(500)
+  configurations  ConfigurationFraisNiveau[]
+
+  @@index([typeRecetteId])
+  @@index([niveauId])
+  @@index([statutId])
+  @@index([actif])
+  @@map("nomenclature_produit")
+}
+
+model ConfigurationFraisNiveau {
+  id                    Int                 @id @default(autoincrement())
+  nomenclatureProduitId Int                 @map("nomenclature_produit_id")
+  nomenclatureProduit   NomenclatureProduit @relation(fields: [nomenclatureProduitId], references: [id])
+  niveauId              Int                 @map("niveau_id")
+  niveau                Niveau              @relation(fields: [niveauId], references: [id])
+  statutEtudiantId      Int                 @map("statut_etudiant_id")
+  statutEtudiant        StatutEtudiant      @relation(fields: [statutEtudiantId], references: [id])
+  montantSpecifique     Int?                @map("montant_specifique")
+  estObligatoire        Boolean             @default(true) @map("est_obligatoire")
+  dateDebutValidite     DateTime            @default(now()) @map("date_debut_validite")
+  dateFinValidite       DateTime?           @map("date_fin_validite")
+
+  @@unique([nomenclatureProduitId, niveauId, statutEtudiantId], name: "unique_configuration")
+  @@index([nomenclatureProduitId])
+  @@index([niveauId])
+  @@index([statutEtudiantId])
+  @@map("configuration_frais_niveau")
+}

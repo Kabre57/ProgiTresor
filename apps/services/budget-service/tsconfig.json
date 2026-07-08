@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "outDir": "./dist",
+    "rootDir": "../../../",
+    "baseUrl": "../../..",
+    "paths": {
+      "zod": ["apps/services/budget-service/node_modules/zod"]
+    },
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["src/**/*", "../../../shared/**/*"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts"]
+}

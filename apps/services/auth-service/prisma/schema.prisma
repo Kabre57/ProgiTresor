@@ -1,0 +1,140 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Role {
+  id          Int              @id @default(autoincrement())
+  code        String           @unique @db.VarChar(30)
+  libelle     String           @db.VarChar(60)
+  description String?          @db.VarChar(255)
+  permissions RolePermission[]
+  users       Utilisateur[]
+
+  @@map("role")
+}
+
+model Permission {
+  id      Int              @id @default(autoincrement())
+  code    String           @unique @db.VarChar(40)
+  libelle String           @db.VarChar(120)
+  module  String           @db.VarChar(40)
+  roles   RolePermission[]
+
+  @@map("permission")
+}
+
+model RolePermission {
+  roleId       Int        @map("role_id")
+  permissionId Int        @map("permission_id")
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permission")
+}
+
+model Utilisateur {
+  id                 Int            @id @default(autoincrement())
+  username           String         @unique @db.VarChar(50)
+  nom                String         @db.VarChar(60)
+  prenom             String         @db.VarChar(60)
+  email              String         @unique @db.VarChar(120)
+  motDePasseHash     String         @map("mot_de_passe_hash") @db.VarChar(255)
+  roleId             Int            @map("role_id")
+  role               Role           @relation(fields: [roleId], references: [id])
+  service            String?        @db.VarChar(60)
+  actif              Boolean        @default(true)
+  photoUrl           String?        @map("photo_url") @db.Text
+  dateCreation       DateTime       @default(now()) @map("date_creation") @db.Timestamptz
+  derniereConnexion  DateTime?      @map("derniere_connexion") @db.Timestamptz
+  auditLogs          JournalAudit[]
+  refreshTokens      RefreshToken[]
+  perimeterLevels    UserPerimeterLevel[]
+  exclusions         PermissionExclusion[]
+  tokenVersion       Int                  @default(1) @map("token_version")
+
+  @@index([roleId])
+  @@map("utilisateur")
+}
+
+model JournalAudit {
+  id            BigInt       @id @default(autoincrement())
+  utilisateurId Int?         @map("utilisateur_id")
+  utilisateur   Utilisateur? @relation(fields: [utilisateurId], references: [id], onDelete: SetNull)
+  action        String       @db.VarChar(40)
+  entite        String?      @db.VarChar(100)
+  entiteId      String?      @map("entite_id") @db.VarChar(100)
+  dateHeure     DateTime     @default(now()) @map("date_heure") @db.Timestamptz
+  adresseIp     String?      @map("adresse_ip") @db.VarChar(45)
+  details       String?      @db.Text
+
+  @@index([utilisateurId])
+  @@index([dateHeure])
+  @@map("journal_audit")
+}
+
+model RefreshToken {
+  id            Int         @id @default(autoincrement())
+  token         String      @unique @db.VarChar(500)
+  utilisateurId Int         @map("utilisateur_id")
+  utilisateur   Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+  expireAt      DateTime    @map("expire_at") @db.Timestamptz
+  revoked       Boolean     @default(false)
+  createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([utilisateurId])
+  @@map("refresh_token")
+}
+
+model Perimeter {
+  id         String                @id @db.VarChar(30) // ex: "DOCS", "USERS", "FINANCES"
+  libelle    String                @db.VarChar(60)
+  levels     PerimeterLevel[]
+  exclusions PermissionExclusion[]
+
+  @@map("perimeter")
+}
+
+model PerimeterLevel {
+  id          Int                  @id @default(autoincrement())
+  perimeterId String               @map("perimeter_id") @db.VarChar(30)
+  level       Int                  // 1, 2, 3
+  libelle     String               @db.VarChar(60) // "Lecture", "Écriture", "Suppression"
+  
+  perimeter   Perimeter            @relation(fields: [perimeterId], references: [id], onDelete: Cascade)
+  users       UserPerimeterLevel[]
+
+  @@unique([perimeterId, level])
+  @@map("perimeter_level")
+}
+
+model UserPerimeterLevel {
+  userId           Int            @map("user_id")
+  perimeterLevelId Int            @map("perimeter_level_id")
+  
+  user             Utilisateur    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  perimeterLevel   PerimeterLevel @relation(fields: [perimeterLevelId], references: [id], onDelete: Cascade)
+
+  @@id([userId, perimeterLevelId])
+  @@map("user_perimeter_level")
+}
+
+model PermissionExclusion {
+  id          Int         @id @default(autoincrement())
+  userId      Int         @map("user_id")
+  perimeterId String      @map("perimeter_id") @db.VarChar(30)
+  action      String      @db.VarChar(100) // ex: "DELETE"
+
+  user        Utilisateur @relation(fields: [userId], references: [id], onDelete: Cascade)
+  perimeter   Perimeter   @relation(fields: [perimeterId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, perimeterId, action])
+  @@index([userId])
+  @@index([perimeterId])
+  @@map("permission_exclusion")
+}
+

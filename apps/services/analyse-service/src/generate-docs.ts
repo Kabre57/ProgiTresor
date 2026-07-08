@@ -1,0 +1,39 @@
+import fs from 'fs';
+import path from 'path';
+import swaggerJSDoc from 'swagger-jsdoc';
+
+const spec = swaggerJSDoc({
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'Analyse Service API',
+      version: '1.0.0',
+      description: 'Aggregation, KPI and PDF synthesis API for ProgiTresor',
+    },
+    paths: {
+      '/generate-synthesis': {
+        post: {
+          summary: 'Generate a provisional synthesis',
+          tags: ['Analyse'],
+        },
+      },
+      '/validate-synthesis': {
+        post: {
+          summary: 'Generate PDF, archive synthesis and create payment orders',
+          tags: ['Analyse'],
+        },
+      },
+      '/kpis': {
+        get: {
+          summary: 'Get analysis KPIs',
+          tags: ['Analyse'],
+        },
+      },
+    },
+  },
+  apis: ['./src/controllers/*.ts'],
+});
+
+const outPath = path.resolve(process.cwd(), 'openapi.json');
+fs.writeFileSync(outPath, JSON.stringify(spec, null, 2));
+// console.log(`OpenAPI written to ${outPath}`);

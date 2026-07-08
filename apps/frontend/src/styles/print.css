@@ -1,0 +1,187 @@
+/* ============================================================
+   ProgiTresor — Print Stylesheet
+   Applied only via @media print.
+   Optimized for ONE-PAGE dashboard printing.
+   ============================================================ */
+
+@media print {
+  /* ---- Page Setup ---- */
+  @page {
+    size: A4 landscape; /* Landscape is usually better for dashboards */
+    margin: 5mm 5mm !important; /* Minimal margins to fit everything */
+  }
+
+  /* Force color rendering */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* ---- Hide UI Elements ---- */
+  nav, aside, header, footer, 
+  .side-nav, .header, .logo,
+  .stacked-side-nav, .stacked-side-nav-mini, .stacked-side-nav-secondary,
+  .sidebar, .topbar, [data-sidebar], [data-topbar],
+  .no-print, .print-hide, button, [role="button"],
+  .breadcrumb, .tabs-list, .filter-bar,
+  .mobile-nav, .mobile-nav-toggle,
+  .horizontal-nav, .horizontal-menu-content {
+    display: none !important;
+  }
+
+  /* ---- Layout Reset ---- */
+  html, body {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 100% !important;
+    max-height: 100% !important;
+    overflow: hidden !important;
+    background: white !important;
+    font-size: 9pt !important; /* Smaller font */
+  }
+
+  body {
+    position: relative !important; /* Context for absolute positioning of the print area */
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Reset layout wrappers to flow naturally in print and prevent content collapse */
+  body > div,
+  main,
+  .app-layout-collapsible-side,
+  .app-layout-stacked-side,
+  .app-layout-top-bar-classic,
+  .app-layout-frameless-side,
+  .app-layout-content-overlay,
+  .app-layout-blank,
+  .app-layout-collapsible-side > div,
+  .app-layout-collapsible-side > div > div,
+  .app-layout-collapsible-side > div > div > div,
+  .app-layout-stacked-side > div,
+  .app-layout-stacked-side > div > div,
+  .app-layout-stacked-side > div > div > div,
+  .app-layout-top-bar-classic > div,
+  .app-layout-top-bar-classic > div > div,
+  .app-layout-top-bar-classic > div > div > div,
+  .app-layout-frameless-side > div,
+  .app-layout-frameless-side > div > div,
+  .app-layout-frameless-side > div > div > div,
+  .page-container,
+  [class*="page-container"],
+  [class*="content-area"] {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    position: static !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    float: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    outline: none !important;
+  }
+
+  /* Disable screen-specific heights during print to prevent forcing blank pages */
+  .min-h-screen, .h-screen, .h-full, .min-h-full {
+    min-height: 0 !important;
+    height: auto !important;
+  }
+
+  /* Remove all flex/grid gaps that take too much space */
+  .gap-6, .gap-8 { gap: 6px !important; }
+  .space-y-8 > * + * { margin-top: 6px !important; }
+  .p-6, .p-8, .p-4 { padding: 6px !important; }
+  .card-body, .card-content { padding: 6px !important; }
+  .card-header, .card-footer { padding: 4px 6px !important; }
+
+  /* ---- Dashboard Specifics ---- */
+  .dashboard-print-area {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    display: block !important;
+    width: 100% !important;
+    zoom: 0.68 !important; /* Scale down to guarantee single page fit */
+    transform: none !important;
+    z-index: 99999 !important;
+    background: white !important;
+  }
+
+  /* KPI Cards - make them more compact */
+  .dashboard-kpi-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important; /* Force 4 columns for KPIs */
+    gap: 6px !important;
+  }
+
+  /* Bottom charts grid - keep 2 columns */
+  .dashboard-charts-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 6px !important;
+  }
+
+  /* Charts - set fixed heights to ensure they fit on one page */
+  .recharts-wrapper, 
+  .apexcharts-canvas, 
+  .apexcharts-canvas svg,
+  .apexcharts-canvas .apexcharts-inner {
+    max-height: 190px !important;
+  }
+
+  .dashboard-charts-grid .recharts-wrapper,
+  .dashboard-charts-grid .apexcharts-canvas,
+  .dashboard-charts-grid .apexcharts-canvas svg,
+  .dashboard-charts-grid .apexcharts-canvas .apexcharts-inner {
+    max-height: 150px !important;
+  }
+
+  /* Remove shadows and simplify borders */
+  .shadow-md, .shadow-xl, [class*="shadow-"], .card {
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+    border-radius: 4px !important;
+    margin-bottom: 0 !important;
+  }
+
+  /* Titles */
+  h1 { font-size: 14pt !important; margin-bottom: 2px !important; }
+  h2 { font-size: 12pt !important; margin-bottom: 2px !important; }
+  h3 { font-size: 10pt !important; }
+
+  /* Force one page */
+  .page-break-after-always { page-break-after: always; }
+  .no-page-break { page-break-inside: avoid; break-inside: avoid; }
+}
+
+/* Screen only */
+.print-header, .print-footer { display: none; }
+@media print {
+  .print-header { 
+    display: block !important; 
+    text-align: center; 
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+    border-bottom: 2px solid #1F4E79;
+  }
+  .print-header h1 {
+    font-size: 16pt !important;
+    color: #1F4E79 !important;
+    margin: 0 !important;
+    font-weight: bold;
+  }
+  .print-header p {
+    font-size: 10pt !important;
+    margin: 2px 0 0 0 !important;
+    color: #555 !important;
+  }
+  .print-footer {
+    display: none !important;
+  }
+}

@@ -1,0 +1,514 @@
+{
+  "info": {
+    "_postman_id": "1f8ed0d0-b8d9-4526-a11e-a47f118c7df2",
+    "name": "ProgiTresor - student-service",
+    "description": "Tests Postman pour le microservice student-service. Importer aussi l'environnement local fourni dans ce dossier.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "System",
+      "item": [
+        {
+          "name": "GET /health",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('service is healthy', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.status).to.eql('ok');",
+                  "  pm.expect(json.service).to.eql('student-service');",
+                  "  pm.expect(json.redis).to.eql('PONG');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{studentBaseUrl}}/health",
+              "host": ["{{studentBaseUrl}}"],
+              "path": ["health"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Referentials",
+      "item": [
+        {
+          "name": "GET /antennes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const antennes = pm.response.json();",
+                  "pm.test('returns 8 seeded antennes', function () {",
+                  "  pm.expect(antennes).to.be.an('array');",
+                  "  pm.expect(antennes.length).to.be.at.least(8);",
+                  "  pm.expect(antennes.map((a) => a.code)).to.include('ABJ');",
+                  "});",
+                  "const abj = antennes.find((antenne) => antenne.code === 'ABJ') || antennes[0];",
+                  "pm.environment.set('antenneId', String(abj.id));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{studentBaseUrl}}/antennes",
+              "host": ["{{studentBaseUrl}}"],
+              "path": ["antennes"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /niveaux",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const niveaux = pm.response.json();",
+                  "pm.test('returns 7 seeded niveaux', function () {",
+                  "  pm.expect(niveaux).to.be.an('array');",
+                  "  pm.expect(niveaux.length).to.be.at.least(7);",
+                  "  pm.expect(niveaux.map((niveau) => niveau.code)).to.include('L1');",
+                  "});",
+                  "const l1 = niveaux.find((niveau) => niveau.code === 'L1') || niveaux[0];",
+                  "pm.environment.set('niveauId', String(l1.id));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{studentBaseUrl}}/niveaux",
+              "host": ["{{studentBaseUrl}}"],
+              "path": ["niveaux"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /statuts-etudiants",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const statuts = pm.response.json();",
+                  "pm.test('returns 3 seeded statuts', function () {",
+                  "  pm.expect(statuts).to.be.an('array');",
+                  "  pm.expect(statuts.length).to.be.at.least(3);",
+                  "  pm.expect(statuts.map((statut) => statut.code)).to.include('PUBLIC');",
+                  "});",
+                  "const publicStatut = statuts.find((statut) => statut.code === 'PUBLIC') || statuts[0];",
+                  "pm.environment.set('statutId', String(publicStatut.id));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{studentBaseUrl}}/statuts-etudiants",
+              "host": ["{{studentBaseUrl}}"],
+              "path": ["statuts-etudiants"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /types-flux",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const flux = pm.response.json();",
+                  "pm.test('returns 2 seeded flux types', function () {",
+                  "  pm.expect(flux).to.be.an('array');",
+                  "  pm.expect(flux.length).to.be.at.least(2);",
+                  "  pm.expect(flux.map((item) => item.code)).to.include('BUDGET');",
+                  "});",
+                  "const budget = flux.find((item) => item.code === 'BUDGET') || flux[0];",
+                  "pm.environment.set('typeFluxId', String(budget.id));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{studentBaseUrl}}/types-flux",
+              "host": ["{{studentBaseUrl}}"],
+              "path": ["types-flux"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /types-recettes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const recettes = pm.response.json();",
+                  "pm.test('returns seeded type recettes', function () {",
+                  "  pm.expect(recettes).to.be.an('array');",
+                  "  pm.expect(recettes.length).to.be.at.least(9);",
+                  "  pm.expect(recettes.map((recette) => recette.code)).to.include('SCOLARITE');",
+                  "});",
+                  "const scolarite = recettes.find((recette) => recette.code === 'SCOLARITE') || recettes[0];",
+                  "pm.environment.set('typeRecetteId', String(scolarite.id));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{studentBaseUrl}}/types-recettes",
+              "host": ["{{studentBaseUrl}}"],
+              "path": ["types-recettes"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /nomenclatures",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const nomenclatures = pm.response.json();",
+                  "pm.test('returns seeded nomenclatures', function () {",
+                  "  pm.expect(nomenclatures).to.be.an('array');",
+                  "  pm.expect(nomenclatures.length).to.be.at.least(3);",
+                  "  pm.expect(nomenclatures[0]).to.have.property('typeRecette');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{studentBaseUrl}}/nomenclatures",
+              "host": ["{{studentBaseUrl}}"],
+              "path": ["nomenclatures"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Students",
+      "item": [
+        {
+          "name": "GET /:matricule - seeded student",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('returns seeded student with relations', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.matricule).to.eql(pm.environment.get('seedMatricule'));",
+                  "  pm.expect(json.antenne).to.be.an('object');",
+                  "  pm.expect(json.niveau).to.be.an('object');",
+                  "  pm.expect(json.statut).to.be.an('object');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{studentBaseUrl}}/{{seedMatricule}}",
+              "host": ["{{studentBaseUrl}}"],
+              "path": ["{{seedMatricule}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /batch",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('returns at least one student', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.be.an('array');",
+                  "  pm.expect(json.length).to.be.at.least(1);",
+                  "  pm.expect(json.map((student) => student.matricule)).to.include(pm.environment.get('seedMatricule'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"matricules\": [\"{{seedMatricule}}\", \"UNKNOWN-STUDENT\"]\n}"
+            },
+            "url": {
+              "raw": "{{studentBaseUrl}}/batch",
+              "host": ["{{studentBaseUrl}}"],
+              "path": ["batch"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST / - create temporary student",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const suffix = Date.now();",
+                  "pm.environment.set('testMatricule', `PM-${suffix}`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                  "pm.test('created student uses current referential ids', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.matricule).to.eql(pm.environment.get('testMatricule'));",
+                  "  pm.expect(json.antenneId).to.eql(Number(pm.environment.get('antenneId')));",
+                  "  pm.expect(json.niveauId).to.eql(Number(pm.environment.get('niveauId')));",
+                  "  pm.expect(json.statutId).to.eql(Number(pm.environment.get('statutId')));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"matricule\": \"{{testMatricule}}\",\n  \"nom\": \"POSTMAN\",\n  \"prenom\": \"Tester\",\n  \"prefixeMatricule\": \"PM\",\n  \"antenneId\": {{antenneId}},\n  \"niveauId\": {{niveauId}},\n  \"statutId\": {{statutId}}\n}"
+            },
+            "url": {
+              "raw": "{{studentBaseUrl}}/",
+              "host": ["{{studentBaseUrl}}"],
+              "path": [""]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /:matricule - update temporary student",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('updated student has new name', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.matricule).to.eql(pm.environment.get('testMatricule'));",
+                  "  pm.expect(json.nom).to.eql('POSTMAN-UPDATED');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nom\": \"POSTMAN-UPDATED\"\n}"
+            },
+            "url": {
+              "raw": "{{studentBaseUrl}}/{{testMatricule}}",
+              "host": ["{{studentBaseUrl}}"],
+              "path": ["{{testMatricule}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /:matricule - temporary student",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('returns updated temporary student', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.matricule).to.eql(pm.environment.get('testMatricule'));",
+                  "  pm.expect(json.nom).to.eql('POSTMAN-UPDATED');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{studentBaseUrl}}/{{testMatricule}}",
+              "host": ["{{studentBaseUrl}}"],
+              "path": ["{{testMatricule}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /:matricule - not found",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 404', function () { pm.response.to.have.status(404); });",
+                  "pm.test('returns error body', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.error.message).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{studentBaseUrl}}/UNKNOWN-STUDENT",
+              "host": ["{{studentBaseUrl}}"],
+              "path": ["UNKNOWN-STUDENT"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "RBAC Smoke",
+      "item": [
+        {
+          "name": "POST /antennes - forbidden without role",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 403', function () { pm.response.to.have.status(403); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"PX\",\n  \"nom\": \"POSTMAN FORBIDDEN\",\n  \"ville\": \"Abidjan\"\n}"
+            },
+            "url": {
+              "raw": "{{studentBaseUrl}}/antennes",
+              "host": ["{{studentBaseUrl}}"],
+              "path": ["antennes"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.environment.get('studentBaseUrl')) {",
+          "  throw new Error('Missing Postman environment variable: studentBaseUrl');",
+          "}"
+        ]
+      }
+    }
+  ]
+}
