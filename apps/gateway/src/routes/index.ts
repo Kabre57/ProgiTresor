@@ -35,6 +35,7 @@ import {
   analyseValidateSynthesisRoute,
   analyseStreamRoute,
   analysePreviewPdfRoute,
+  analyseArchivesRoute,
 } from './analyse.routes';
 import { userRoutes, rolesRoute, permissionsRoute, myProfileRoute } from './user.routes';
 import {
@@ -44,6 +45,7 @@ import {
   comptaEntryByIdRoute,
   comptaLignesBudgetairesRoute,
   comptaLotsRoute,
+  comptaPendingEcrituresRoute,
 } from './compta.routes';
 import { budgetOrdresPaiementRoute } from './budget.routes';
 
@@ -94,6 +96,7 @@ export const allRoutes: GatewayRoute[] = [
   analyseValidateSynthesisRoute,
   analyseStreamRoute,
   analysePreviewPdfRoute,
+  analyseArchivesRoute,
   orderGenerateRoute,
   otRoutes,
   orderRoutes,
@@ -101,6 +104,7 @@ export const allRoutes: GatewayRoute[] = [
   comptaLotsRoute,
   comptaLignesBudgetairesRoute,
   comptaControlesOpRoute,
+  comptaPendingEcrituresRoute,
   comptaEntriesRoute,
   comptaEntryByIdRoute,
   budgetOrdresPaiementRoute

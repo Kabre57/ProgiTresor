@@ -4,21 +4,6 @@ import { useTransactions } from '@/lib/hooks/useOperationsQueries';
 import { isValidatedTransaction } from '@/components/etudiant-portail/PortalComponents';
 import type { NomenclatureProduit } from '@/types/etudiant.types';
 
-const isApplicableNomenclature = (
-  item: NomenclatureProduit,
-  niveauId: number,
-  filiereId: number | null,
-  statutId: number,
-) => {
-  const niveauMatches = item.niveauId === null || item.niveauId === niveauId;
-  const filiereMatches =
-    item.filiereId === null ||
-    filiereId === null ||
-    item.filiereId === filiereId ||
-    item.niveau?.filiereId === filiereId;
-  const statutMatches = item.statutId === null || item.statutId === statutId;
-  return item.actif && niveauMatches && filiereMatches && statutMatches;
-};
 
 export function useStudentPortalData() {
   const etudiantQuery = useEtudiantMe();
@@ -37,13 +22,8 @@ export function useStudentPortalData() {
   );
 
   const applicableNomenclatures = useMemo(() => {
-    const etudiant = etudiantQuery.data;
-    const nomenclatures = nomenclatureQuery.data ?? [];
-    if (!etudiant) return [];
-    return nomenclatures.filter((item) =>
-      isApplicableNomenclature(item, etudiant.niveauId, etudiant.filiereId, etudiant.statutId),
-    );
-  }, [etudiantQuery.data, nomenclatureQuery.data]);
+    return etudiantQuery.data?.nomenclatures ?? [];
+  }, [etudiantQuery.data]);
 
   const totalFees = applicableNomenclatures.reduce(
     (sum, item) => sum + Number(item.montant ?? 0),

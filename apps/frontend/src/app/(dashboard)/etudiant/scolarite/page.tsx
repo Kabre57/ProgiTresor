@@ -77,7 +77,7 @@ export default function EtudiantScolaritePage() {
                   {applicableNomenclatures.map((item) => (
                     <tr key={item.id}>
                       <td className="px-6 py-4 font-medium">{item.codeProduit}</td>
-                      <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{item.libelleStandard}</td>
+                      <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{item.libelle}</td>
                       <td className="px-6 py-4 text-right font-semibold">{formatCurrency(item.montant)}</td>
                     </tr>
                   ))}

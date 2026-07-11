@@ -37,12 +37,11 @@ const initialFilters = {
   libelleProduit: '',
   antenneId: [] as number[],
   filiereId: [] as number[],
-  niveauId: [] as number[],
+  promotionId: [] as number[],
   statutId: [] as number[],
   typeFluxId: [] as number[],
   typeRecetteId: [] as number[],
   nomenclatureId: [] as number[],
-  promotion: '',
 };
 
 export function TransactionFilters({ onApplyFilters }: TransactionFiltersProps) {
@@ -50,7 +49,7 @@ export function TransactionFilters({ onApplyFilters }: TransactionFiltersProps) 
 
   // Referential queries
   const antennesQuery = useReferential('antennes');
-  const niveauxQuery = useReferential('niveaux');
+
   const filieresQuery = useReferential('filieres');
   const statutsQuery = useReferential('statuts-etudiants');
   const typesFluxQuery = useReferential('types-flux');
@@ -69,9 +68,9 @@ export function TransactionFilters({ onApplyFilters }: TransactionFiltersProps) 
     label: item.libelle || item.code,
   }));
 
-  const niveauOptions = (niveauxQuery.data ?? []).map((item: any) => ({
+  const promotionOptions = (promotionsQuery.data ?? []).map((item: any) => ({
     value: String(item.id),
-    label: item.libelle || item.code,
+    label: item.niveau ? `${item.niveau} ${item.ordre}` : item.nom,
   }));
 
   const statutOptions = (statutsQuery.data ?? []).map((item: any) => ({
@@ -152,19 +151,10 @@ export function TransactionFilters({ onApplyFilters }: TransactionFiltersProps) 
     })
     .map((item: any) => ({
       value: String(item.id),
-      label: item.libelleStandard || item.libelleBrut,
+      label: item.libelle,
     }));
 
-  // Async load promotions
-  const loadPromotionOptions = async (inputValue: string) => {
-    const list = (promotionsQuery.data ?? []).map((p: any) => ({
-      value: p.nom,
-      label: p.nom,
-    }));
-    return list.filter((i: any) =>
-      i.label.toLowerCase().includes((inputValue || '').toLowerCase())
-    );
-  };
+
 
   const handleApplyFilters = () => {
     onApplyFilters({ ...filters });
@@ -220,17 +210,6 @@ export function TransactionFilters({ onApplyFilters }: TransactionFiltersProps) 
             onChange={(e) => setFilters(f => ({ ...f, libelleProduit: e.target.value }))}
           />
 
-          <Select
-            label="Promotion"
-            placeholder="Toutes les promotions"
-            value={filters.promotion ? { value: filters.promotion, label: filters.promotion } : null}
-            loadOptions={loadPromotionOptions}
-            defaultOptions={true}
-            onChange={(val: any) => setFilters(f => ({ ...f, promotion: val?.value || '' }))}
-            cacheOptions
-            isClearable
-          />
-
           <MultiSelect
             label="Antenne"
             placeholder="Sélectionner..."
@@ -240,11 +219,11 @@ export function TransactionFilters({ onApplyFilters }: TransactionFiltersProps) 
           />
 
           <MultiSelect
-            label="Niveau"
+            label="Promotion"
             placeholder="Sélectionner..."
-            options={niveauOptions}
-            value={filters.niveauId.map(String)}
-            onChange={(vals) => setFilters(f => ({ ...f, niveauId: vals.map(Number) }))}
+            options={promotionOptions}
+            value={filters.promotionId.map(String)}
+            onChange={(vals) => setFilters(f => ({ ...f, promotionId: vals.map(Number) }))}
           />
 
           <MultiSelect

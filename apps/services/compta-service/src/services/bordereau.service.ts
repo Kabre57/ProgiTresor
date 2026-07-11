@@ -5,6 +5,7 @@ import { prisma } from '../utils/prisma';
 import { dbQueryDuration } from '../utils/metrics';
 import { http, TRANSACTION_SERVICE_URL } from '../utils/httpClient';
 import { AppError } from '../utils/errors';
+import { parseSafeDate } from '../utils/date';
 
 type RemoteTransaction = {
   id: number | string;
@@ -104,15 +105,22 @@ export const createBordereauFromOts = async (input: BordereauFromOtsInput) => {
         },
       });
 
-      await txClient.ecritureBudgetaire.createMany({
-        data: rows.map((row) => toEcritureCreateInput(bordereau.id, row.codeOt, row.tx)),
-        skipDuplicates: true,
-      });
+      const ecritureData = rows.map((row) => toEcritureCreateInput(bordereau.id, row.codeOt, row.tx));
+      const chunkSize = 10000;
+      for (let i = 0; i < ecritureData.length; i += chunkSize) {
+        const chunk = ecritureData.slice(i, i + chunkSize);
+        await txClient.ecritureBudgetaire.createMany({
+          data: chunk,
+          skipDuplicates: true,
+        });
+      }
 
       return txClient.bordereau.findUniqueOrThrow({
         where: { id: bordereau.id },
         include: includeBordereau,
       });
+    }, {
+      timeout: 300000
     });
   } finally {
     end();
@@ -122,10 +130,13 @@ export const createBordereauFromOts = async (input: BordereauFromOtsInput) => {
 export const listBordereaux = async (query: BordereauListQueryInput) => {
   const where: Prisma.BordereauWhereInput = {};
   if (query.statut) where.statut = query.statut;
-  if (query.dateDebut || query.dateFin) {
+  
+  const dateDebut = parseSafeDate(query.dateDebut);
+  const dateFin = parseSafeDate(query.dateFin);
+  if (dateDebut || dateFin) {
     where.dateReception = {};
-    if (query.dateDebut) where.dateReception.gte = new Date(query.dateDebut);
-    if (query.dateFin) where.dateReception.lte = new Date(query.dateFin);
+    if (dateDebut) where.dateReception.gte = dateDebut;
+    if (dateFin) where.dateReception.lte = dateFin;
   }
 
   const skip = (query.page - 1) * query.limit;
@@ -149,3 +160,27 @@ export const listEcritures = async (bordereauId: number) => {
     orderBy: { dateFlux: 'asc' },
   });
 };
+
+export const listPendingEcritures = async (query: {
+  antenneId?: number;
+  typeRecetteId?: number;
+  dateDebut?: string;
+  dateFin?: string;
+}) => {
+  const where: any = { statut: 'EN_ATTENTE' };
+  if (query.antenneId) where.antenneId = query.antenneId;
+  if (query.typeRecetteId) where.typeRecetteId = query.typeRecetteId;
+  
+  const dateDebut = parseSafeDate(query.dateDebut);
+  const dateFin = parseSafeDate(query.dateFin);
+  if (dateDebut || dateFin) {
+    where.dateFlux = {};
+    if (dateDebut) where.dateFlux.gte = dateDebut;
+    if (dateFin) where.dateFlux.lte = dateFin;
+  }
+  return prisma.ecritureBudgetaire.findMany({
+    where,
+    orderBy: { dateFlux: 'desc' },
+  });
+};
+

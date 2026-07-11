@@ -37,12 +37,32 @@ export const BordereauListQuerySchema = z.object({
 });
 
 export const LotTraitementCreateSchema = z.object({
-  bordereauId: z.coerce.number().int().positive(),
+  bordereauId: z.coerce.number().int().positive().optional(),
   reference: z.string().trim().min(1).optional(),
   dateDebutFlux: z.string().trim().optional(),
   dateFinFlux: z.string().trim().optional(),
   typeRecetteId: z.coerce.number().int().positive().optional(),
   antenneId: z.coerce.number().int().positive().optional(),
+  limit: z.coerce.number().int().positive().optional(),
+  ecritureIds: z.array(z.coerce.number().int().positive()).optional(),
+  remarques: z.string().trim().optional(),
+});
+
+
+export const LotTraitementListQuerySchema = z.object({
+  statut: z.string().trim().optional(),
+  dateDebut: z.string().trim().optional(),
+  dateFin: z.string().trim().optional(),
+  codeOt: z.string().trim().optional(),
+  titre: z.string().trim().optional(),
+  utilisateur: z.string().trim().optional(),
+  montantMin: z.coerce.number().nonnegative().optional(),
+  montantMax: z.coerce.number().nonnegative().optional(),
+  search: z.string().trim().optional(),
+  sortBy: z.enum(['dateCreation', 'montantTotal', 'nombreEcritures', 'reference', 'statut']).default('dateCreation'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().positive().max(200).default(20),
 });
 
 export const LotTraitementProcessSchema = z.object({
@@ -84,6 +104,7 @@ export type ComptaPaginationInput = z.infer<typeof ComptaPaginationSchema>;
 export type BordereauFromOtsInput = z.infer<typeof BordereauFromOtsSchema>;
 export type BordereauListQueryInput = z.infer<typeof BordereauListQuerySchema>;
 export type LotTraitementCreateInput = z.infer<typeof LotTraitementCreateSchema>;
+export type LotTraitementListQueryInput = z.infer<typeof LotTraitementListQuerySchema>;
 export type LotTraitementProcessInput = z.infer<typeof LotTraitementProcessSchema>;
 export type LotTraitementTransmitInput = z.infer<typeof LotTraitementTransmitSchema>;
 export type ControleOpInput = z.infer<typeof ControleOpSchema>;

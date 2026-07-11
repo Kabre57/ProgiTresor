@@ -43,7 +43,7 @@ export function ProfileTab({
         </CardHeader>
         <CardContent className="grid gap-3">
           <InfoItem label="Matricule" value={etudiant.matricule} icon={<BookOpen className="h-3.5 w-3.5" />} />
-          <InfoItem label="Promotion" value={etudiant.promotion?.nom || etudiant.promotionString} icon={<Calendar className="h-3.5 w-3.5" />} />
+          <InfoItem label="Promotion" value={etudiant.promotion?.niveau ? `${etudiant.promotion.niveau} ${etudiant.promotion.ordre}` : (etudiant.promotion?.nom || etudiant.promotionString)} icon={<Calendar className="h-3.5 w-3.5" />} />
           <InfoItem label="Filiere / Niveau" value={etudiant.filiere?.libelle} icon={<Award className="h-3.5 w-3.5" />} />
           <InfoItem label="Antenne" value={etudiant.antenne?.nom} icon={<MapPin className="h-3.5 w-3.5" />} />
           <InfoItem label="Statut" value={etudiant.statut?.libelle} icon={<ShieldCheck className="h-3.5 w-3.5" />} />

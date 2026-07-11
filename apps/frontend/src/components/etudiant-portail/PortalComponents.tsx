@@ -78,7 +78,7 @@ export const getTransactionReference = (tx: Transaction) =>
   String(tx.refTresor ?? tx.reference ?? tx.id ?? '-');
 
 export const getTransactionProduct = (tx: Transaction) =>
-  String(tx.libelleProduitBrut ?? tx.libelleStandard ?? tx.typeRecette ?? 'Scolarite');
+  String(tx.libelleProduitBrut ?? tx.libelle ?? tx.typeRecette ?? 'Scolarite');
 
 export const getTransactionStatus = (tx: Transaction) =>
   String(tx.statutTraitement ?? tx.statut ?? 'EN_ATTENTE');

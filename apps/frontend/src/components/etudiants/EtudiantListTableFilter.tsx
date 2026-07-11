@@ -7,12 +7,11 @@ import Select from '@/components/ui/Select';
 import { Form, FormItem } from '@/components/ui/Form';
 import { TbFilter } from 'react-icons/tb';
 import { useEtudiantListStore, type EtudiantListFilter } from '@/lib/store/etudiant/etudiantListStore';
-import type { Antenne, Filiere, Niveau, Promotion, StatutEtudiant } from '@/types/etudiant.types';
+import type { Antenne, Filiere, Promotion, StatutEtudiant } from '@/types/etudiant.types';
 
 type EtudiantListTableFilterProps = {
   antennes: Antenne[];
   filieres: Filiere[];
-  niveaux: Niveau[];
   statuts: StatutEtudiant[];
   promotions: Promotion[];
 };
@@ -22,7 +21,7 @@ const toNumberOrUndefined = (value: unknown) => {
   return numeric > 0 ? numeric : undefined;
 };
 
-const EtudiantListTableFilter = ({ antennes, filieres, niveaux, statuts, promotions }: EtudiantListTableFilterProps) => {
+const EtudiantListTableFilter = ({ antennes, filieres, statuts, promotions }: EtudiantListTableFilterProps) => {
   const [dialogIsOpen, setIsOpen] = useState(false);
   const filterData = useEtudiantListStore((state) => state.filterData);
   const setFilterData = useEtudiantListStore((state) => state.setFilterData);
@@ -31,10 +30,6 @@ const EtudiantListTableFilter = ({ antennes, filieres, niveaux, statuts, promoti
   const antenneOptions = [
     { label: 'Toutes les antennes', value: 0 },
     ...antennes.map((item) => ({ label: `${item.code} - ${item.nom}`, value: item.id })),
-  ];
-  const niveauOptions = [
-    { label: 'Tous les niveaux', value: 0 },
-    ...niveaux.map((item) => ({ label: `${item.code} - ${item.libelle}`, value: item.id })),
   ];
   const filiereOptions = [
     { label: 'Toutes les filières', value: 0 },
@@ -46,7 +41,7 @@ const EtudiantListTableFilter = ({ antennes, filieres, niveaux, statuts, promoti
   ];
   const promotionOptions = [
     { label: 'Toutes les promotions', value: 0 },
-    ...promotions.map((item) => ({ label: item.nom, value: item.id })),
+    ...promotions.map((item) => ({ label: item.niveau ? `${item.niveau} ${item.ordre}` : item.nom, value: item.id })),
   ];
 
   const openDialog = () => {
@@ -111,21 +106,7 @@ const EtudiantListTableFilter = ({ antennes, filieres, niveaux, statuts, promoti
               searchable
             />
           </FormItem>
-          <FormItem label="Niveau">
-            <Select
-              instanceId="etudiant-filter-niveau"
-              placeholder="Tous les niveaux"
-              options={niveauOptions}
-              value={draft.niveauId ?? 0}
-              onChange={(event) =>
-                setDraft((current) => ({
-                  ...current,
-                  niveauId: toNumberOrUndefined(event.target.value),
-                }))
-              }
-              searchable
-            />
-          </FormItem>
+
           <FormItem label="Filière">
             <Select
               instanceId="etudiant-filter-filiere"

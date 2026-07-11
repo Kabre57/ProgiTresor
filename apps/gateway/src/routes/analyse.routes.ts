@@ -66,3 +66,15 @@ export const analysePreviewPdfRoute = {
   requiredLevel: 2,
 };
 
+export const analyseArchivesRoute = {
+  path: '/api/analyse/archives',
+  target: config.ANALYSE_SERVICE_URL,
+  secure: true,
+  roles: ['Administrateur', 'Comptable', 'Chef Comptable', 'Directeur Financier', 'Agent Budget', 'Consultant'],
+  serviceBasePath: '/archives',
+  perimeter: 'ANALYSE',
+  action: 'READ_KPIS',
+  requiredLevel: 1,
+};
+
+

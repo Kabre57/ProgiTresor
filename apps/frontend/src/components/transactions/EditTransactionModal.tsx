@@ -94,7 +94,7 @@ export function EditTransactionModal({ open, onClose, transaction }: EditTransac
 
   const nomenclatureOptions = (nomenclaturesQuery.data ?? []).map((item: any) => ({
     value: String(item.id),
-    label: item.libelleStandard || item.libelleBrut,
+    label: item.libelle,
   }));
 
   const typeFluxOptions = (typesFluxQuery.data ?? []).map((item: any) => ({

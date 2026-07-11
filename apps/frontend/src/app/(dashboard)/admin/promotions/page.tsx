@@ -13,11 +13,13 @@ export default function PromotionsPage() {
       fields={[
         { name: 'nom', label: 'Nom de la Promotion (ex: Première année)', required: true },
         { name: 'ordre', label: 'Ordre (ex: 1 pour Première année)', type: 'number', required: true },
+        { name: 'niveau', label: 'Niveau (ex: Licence, Auxiliaire)', required: false },
         { name: 'actif', label: 'Actif', type: 'checkbox' },
       ]}
       columns={[
         { key: 'nom', header: 'Nom de la Promotion', render: (row) => <Badge tone="info">{row.nom}</Badge> },
         { key: 'ordre', header: 'Ordre', render: (row) => row.ordre },
+        { key: 'niveau', header: 'Niveau', render: (row) => row.niveau || 'N/A' },
         { key: 'actif', header: 'Statut', render: (row) => <Badge tone={row.actif ? 'success' : 'danger'}>{row.actif ? 'Actif' : 'Inactif'}</Badge> },
         { key: 'etudiantCount', header: 'Nombre d’étudiants', render: (row: any) => row._count?.etudiant ?? 0 },
       ]}

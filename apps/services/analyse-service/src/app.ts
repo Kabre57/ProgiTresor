@@ -15,6 +15,7 @@ import {
   handleSseConnection,
   previewPdf,
   generateAttestation,
+  getArchives,
 } from './controllers/analyseController';
 import { httpRequestDurationMs } from './utils/metrics';
 
@@ -59,6 +60,7 @@ app.post('/generate-synthesis', authorizePerimeter('ANALYSE', 2, 'GENERATE_SYNTH
 app.post('/validate-synthesis', authorizePerimeter('ANALYSE', 2, 'VALIDATE_SYNTHESIS'), validateSynthesis);
 app.post('/preview-pdf', authorizePerimeter('ANALYSE', 2, 'VALIDATE_SYNTHESIS'), previewPdf);
 app.post('/generate-attestation', generateAttestation);
+app.get('/archives', authorizePerimeter('ANALYSE', 1, 'READ_KPIS'), getArchives);
 
 app.use(errorHandler);
 

@@ -15,7 +15,7 @@ echo "Generating Prisma client..."
 npx prisma generate
 
 echo "Synchronizing database schema..."
-npx prisma migrate deploy || npx prisma db push
+npx prisma migrate deploy
 
 echo "Starting budget-service..."
 exec node dist/apps/services/budget-service/src/index.js

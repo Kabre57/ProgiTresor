@@ -41,8 +41,6 @@ export const getAll = async (req: Request, res: Response, next: NextFunction) =>
     res.json(await nomenclatureService.getAll({
       typeRecetteId: parsePositiveInt(req.query.typeRecetteId),
       typeFluxId: parsePositiveInt(req.query.typeFluxId),
-      niveauId: parsePositiveInt(req.query.niveauId ?? req.query.filiereId),
-      statutId: parsePositiveInt(req.query.statutId),
       actif: parseBoolean(req.query.actif),
     }));
   } catch (e) { next(e); }

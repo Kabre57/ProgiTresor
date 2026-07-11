@@ -122,14 +122,22 @@ export const createEtudiant = async (data: EtudiantCreateData) => {
       }
     }
 
-    const { promotion, photoUrl, filiereId, ...cleanedData } = data as any;
+    const { promotion, photoUrl, filiereId, nomenclatureIds, ...cleanedData } = data as any;
 
-    const etudiant = await etudiantRepository.createEtudiant({
+    const createPayload: any = {
       ...cleanedData,
       promotionId: promotionId || null,
       promotionString: promotionString || null,
       photoUrl: photoUrl || null,
-    });
+    };
+
+    if (nomenclatureIds && Array.isArray(nomenclatureIds)) {
+      createPayload.nomenclatures = {
+        connect: nomenclatureIds.map((id: number) => ({ id }))
+      };
+    }
+
+    const etudiant = await etudiantRepository.createEtudiant(createPayload);
     logger.info({ matricule: data.matricule }, 'Etudiant created');
     return etudiant;
   } catch (e: unknown) {
@@ -155,7 +163,7 @@ export const updateEtudiant = async (
     }
   }
 
-  const { promotion, photoUrl, filiereId, ...cleanedData } = data as any;
+  const { promotion, photoUrl, filiereId, nomenclatureIds, ...cleanedData } = data as any;
 
   const updatePayload: any = {
     ...cleanedData,
@@ -170,6 +178,14 @@ export const updateEtudiant = async (
   }
   if (promotionString !== undefined) {
     updatePayload.promotionString = promotionString;
+  }
+
+  if (nomenclatureIds !== undefined) {
+    if (Array.isArray(nomenclatureIds)) {
+      updatePayload.nomenclatures = {
+        set: nomenclatureIds.map((id: number) => ({ id }))
+      };
+    }
   }
 
   const updated = await etudiantRepository.updateEtudiant(matricule, updatePayload);
@@ -190,10 +206,9 @@ export const searchEtudiants = async (
   filiereId?: number | number[],
   statutId?: number | number[],
   promotion?: string | string[],
-  promotionId?: number | number[],
-  niveauId?: number | number[]
+  promotionId?: number | number[]
 ) => {
-  return etudiantRepository.searchEtudiants(query, antenneId, filiereId, statutId, promotion, promotionId, niveauId);
+  return etudiantRepository.searchEtudiants(query, antenneId, filiereId, statutId, promotion, promotionId);
 };
 
 export const batchLookupEtudiantsByIds = async (ids: number[]) => {
@@ -272,11 +287,11 @@ export const upsertTemporaryEtudiant = async (data: { matriculeTresorPay: string
   // Fallbacks referentiel obligatoires
   const prismaInstance = etudiantRepository.getPrismaClient();
   const antenne = await prismaInstance.antenne.findFirst();
-  const niveau = await prismaInstance.niveau.findFirst();
+  const filiere = await prismaInstance.filiere.findFirst();
   const statut = await prismaInstance.statutEtudiant.findFirst();
 
-  if (!antenne || !niveau || !statut) {
-    throw new Error('Default referentials (Antenne, Niveau, Statut) are missing in database.');
+  if (!antenne || !filiere || !statut) {
+    throw new Error('Default referentials (Antenne, Filiere, Statut) are missing in database.');
   }
 
   // Create etudiant
@@ -285,7 +300,7 @@ export const upsertTemporaryEtudiant = async (data: { matriculeTresorPay: string
     nom,
     prenom,
     antenneId: antenne.id,
-    niveauId: niveau.id,
+    filiereId: filiere.id,
     statutId: statut.id,
     matriculeTresorPay: storedTresorPay,
     estTemporaire: true,
@@ -305,7 +320,9 @@ export const upsertTemporaryEtudiant = async (data: { matriculeTresorPay: string
   return { ...etudiant, lookupKey, lookupKeys: [lookupKey] };
 };
 
-export const upsertTemporaryEtudiantsBatch = async (items: { matriculeTresorPay: string, nomPayeur: string }[]) => {
+export const upsertTemporaryEtudiantsBatch = async (
+  items: { matriculeTresorPay: string; nom: string; prenom: string; antenneId?: number; filiere?: string }[]
+) => {
   const cleanItems = items
     .map(item => {
       const lookupKey = normalizeTresorLookupKey(item.matriculeTresorPay || '');
@@ -313,19 +330,47 @@ export const upsertTemporaryEtudiantsBatch = async (items: { matriculeTresorPay:
         lookupKey,
         storedTresorPay: generateSafeTresorPayKey(lookupKey),
         temporaryMatricule: generateSafeTemporaryMatricule(lookupKey),
-        nomPayeur: (item.nomPayeur || 'Payeur Inconnu').trim()
+        nom: (item.nom || 'Inconnu').trim().toUpperCase(),
+        prenom: (item.prenom || 'Inconnu').trim().toUpperCase(),
+        antenneId: item.antenneId ?? null,
+        filiere: item.filiere ?? null,
       };
     })
     .filter(item => item.lookupKey !== '');
 
   const prismaInstance = etudiantRepository.getPrismaClient();
-  const antenne = await prismaInstance.antenne.findFirst();
-  const niveau = await prismaInstance.niveau.findFirst();
-  const statut = await prismaInstance.statutEtudiant.findFirst();
+  const [antennes, filieres, statuts] = await Promise.all([
+    prismaInstance.antenne.findMany(),
+    prismaInstance.filiere.findMany(),
+    prismaInstance.statutEtudiant.findMany(),
+  ]);
 
-  if (!antenne || !niveau || !statut) {
-    throw new Error('Default referentials (Antenne, Niveau, Statut) are missing in database.');
+  const defaultAntenne = antennes[0];
+  const defaultFiliere = filieres[0];
+  const defaultStatut = statuts.find(s => s.code.toUpperCase() === 'PUBLIC') || statuts[0];
+
+  if (!defaultAntenne || !defaultFiliere || !defaultStatut) {
+    throw new Error('Default referentials (Antenne, Filiere, Statut) are missing in database.');
   }
+
+  const normalizeForMatch = (str: string): string => {
+    return str
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim();
+  };
+
+  const matchFiliere = (excelFil: string | null | undefined): number | null => {
+    if (!excelFil) return null;
+    const clean = normalizeForMatch(excelFil);
+    const found = filieres.find(f => 
+      clean === normalizeForMatch(f.code) ||
+      clean === normalizeForMatch(f.libelle) ||
+      clean === normalizeForMatch(f.abreviation)
+    );
+    return found ? found.id : null;
+  };
 
   const uniqueItemsByLookupKey = new Map<string, typeof cleanItems[number]>();
   for (const item of cleanItems) {
@@ -361,14 +406,18 @@ export const upsertTemporaryEtudiantsBatch = async (items: { matriculeTresorPay:
   if (itemsToCreate.length > 0) {
     await prismaInstance.etudiant.createMany({
       data: itemsToCreate.map(item => {
-        const { nom, prenom } = splitFullName(item.nomPayeur);
+        const resolvedAntenneId = item.antenneId && antennes.some(a => a.id === item.antenneId)
+          ? item.antenneId
+          : defaultAntenne.id;
+        const resolvedFiliereId = matchFiliere(item.filiere) ?? defaultFiliere.id;
+
         return {
           matricule: item.temporaryMatricule,
-          nom,
-          prenom,
-          antenneId: antenne.id,
-          niveauId: niveau.id,
-          statutId: statut.id,
+          nom: item.nom,
+          prenom: item.prenom,
+          antenneId: resolvedAntenneId,
+          filiereId: resolvedFiliereId,
+          statutId: defaultStatut.id,
           matriculeTresorPay: item.storedTresorPay,
           estTemporaire: true,
         };
@@ -397,7 +446,7 @@ export const upsertTemporaryEtudiantsBatch = async (items: { matriculeTresorPay:
       if (!item) return null;
       return {
         matriculeTresorPay: item.storedTresorPay,
-        nomPayeur: item.nomPayeur,
+        nomPayeur: `${item.nom} ${item.prenom}`.trim(),
         etudiantTemporaireId: etudiant.id,
         traite: false
       };
@@ -554,11 +603,7 @@ export const getStudentFinancialSummary = async (identifier: string) => {
       where: { id },
       include: {
         antenne: true,
-        niveau: {
-          include: {
-            filiere: true
-          }
-        },
+        filiere: true,
         statut: true,
         promotion: true
       }
@@ -568,11 +613,7 @@ export const getStudentFinancialSummary = async (identifier: string) => {
       where: { matricule: identifier },
       include: {
         antenne: true,
-        niveau: {
-          include: {
-            filiere: true
-          }
-        },
+        filiere: true,
         statut: true,
         promotion: true
       }
@@ -583,43 +624,16 @@ export const getStudentFinancialSummary = async (identifier: string) => {
     throw new NotFoundError('Etudiant not found');
   }
 
-  // Fetch active configurations of mandatory fees matching the student's level and status
-  const currentDate = new Date();
-  const configurations = await prismaInstance.configurationFraisNiveau.findMany({
-    where: {
-      niveauId: student.niveauId,
-      statutEtudiantId: student.statutId,
-      estObligatoire: true,
-      dateDebutValidite: { lte: currentDate },
-    },
+  // Fetch active nomenclatures assigned directly to the student
+  const studentWithNomenclatures = await prismaInstance.etudiant.findUnique({
+    where: { id: student.id },
     include: {
-      nomenclatureProduit: {
-        include: {
-          niveau: true,
-          statut: true
-        }
+      nomenclatures: {
+        where: { actif: true }
       }
     }
   });
-
-  // Filter configurations to make sure the nomenclature is active and dateFinValidite is not expired
-  const activeConfigurations = configurations.filter((config: any) => {
-    if (!config.nomenclatureProduit || !config.nomenclatureProduit.actif) return false;
-    if (!config.dateFinValidite) return true;
-    return new Date(config.dateFinValidite) >= currentDate;
-  });
-
-  // Map to nomenclature objects with final amount (specific or default)
-  const applicableNomenclatures = activeConfigurations.map((config: any) => {
-    const defaultNom = config.nomenclatureProduit;
-    const finalMontant = config.montantSpecifique !== null && config.montantSpecifique !== undefined
-      ? config.montantSpecifique
-      : defaultNom.montant;
-    return {
-      ...defaultNom,
-      montant: finalMontant
-    };
-  });
+  const applicableNomenclatures = studentWithNomenclatures?.nomenclatures || [];
 
   const montantTotalAttendu = applicableNomenclatures.reduce((sum: number, item: any) => sum + item.montant, 0);
 
@@ -646,8 +660,7 @@ export const getStudentFinancialSummary = async (identifier: string) => {
       matricule: student.matricule,
       nom: student.nom,
       prenom: student.prenom,
-      niveau: student.niveau?.libelle,
-      filiere: student.niveau?.filiere?.libelle,
+      filiere: student.filiere?.libelle,
       statut: student.statut?.libelle,
       promotion: student.promotion?.nom || student.promotionString,
     },
@@ -667,7 +680,7 @@ export const generateStudentAttestation = async (identifier: string): Promise<Bu
     throw new ValidationError(`Solde restant à régler : ${formattedSolde} FCFA. L'attestation ne peut être générée qu'après le règlement complet.`);
   }
 
-  const analyseServiceUrl = process.env.ANALYSE_SERVICE_URL || 'http://analyse-service:5002';
+  const analyseServiceUrl = process.env.ANALYSE_SERVICE_URL || 'http://analyse-service:5005';
   const res = await fetch(`${analyseServiceUrl}/generate-attestation`, {
     method: 'POST',
     headers: {

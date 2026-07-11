@@ -39,7 +39,7 @@ apiClient.interceptors.response.use(
     const status = error.response?.status;
     const isRefreshRequest = isAuthRequest(originalRequest?.url);
 
-    if (!originalRequest || originalRequest._retry || isRefreshRequest || (status !== 401 && status !== 403)) {
+    if (!originalRequest || originalRequest._retry || isRefreshRequest || status !== 401) {
       return Promise.reject(error);
     }
 

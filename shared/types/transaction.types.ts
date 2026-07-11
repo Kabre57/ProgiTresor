@@ -34,13 +34,16 @@ export const TransactionItemSchema = z.object({
   nomPayeurBrut: z.string().trim().min(1).optional().nullable(),
   contactPayeur: z.string().trim().optional().nullable(),
   libelleProduitBrut: z.string().trim().min(1).optional().nullable(),
-  filiere: z.string().trim().min(1).optional().nullable(),
-  niveau: z.string().trim().min(1).optional().nullable(),
+  filiere: z.string().trim().optional().nullable(),
+  niveau: z.string().trim().optional().nullable(),
   versement: z.string().trim().min(1).optional().nullable(),
   typeFrais: z.string().trim().min(1).optional().nullable(),
   ordreTraitementId: z.preprocess(preprocessNumber, z.number().int().positive().optional().nullable()),
   etudiantMatricule: z.string().trim().optional().nullable(),
   matriculeTresorPay: z.string().trim().optional().nullable(),
+  antenne: z.string().trim().optional().nullable(),
+  typeRecette: z.string().trim().optional().nullable(),
+  typeFlux: z.string().trim().optional().nullable(),
 });
 
 /**

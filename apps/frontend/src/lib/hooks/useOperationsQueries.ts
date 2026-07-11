@@ -10,6 +10,7 @@ import type {
   BordereauListParams,
   LigneBudgetairePayload,
   LotTraitementCreatePayload,
+  LotTraitementListParams,
   LotTraitementProcessPayload,
   OrdrePaiementListParams,
 } from '@/types/compta-budget.types';
@@ -124,6 +125,12 @@ export const useValidateSynthesis = () => {
   });
 };
 
+export const useAnalyseArchives = () =>
+  useQuery({
+    queryKey: ['analyse', 'archives'],
+    queryFn: () => analyseApi.getArchives(),
+  });
+
 export const useGroupedByRecette = (params?: OperationQueryParams, enabled = true) =>
   useQuery({
     queryKey: ['dashboard', 'grouped-by-recette', params],
@@ -192,22 +199,35 @@ export const useSaveLigneBudgetaire = () => {
   });
 };
 
-export const useLotsTraitement = () =>
+export const useLotsTraitement = (params?: LotTraitementListParams) =>
   useQuery({
-    queryKey: ['compta', 'lots'],
-    queryFn: comptaWorkflowApi.listLots,
+    queryKey: ['compta', 'lots', params],
+    queryFn: () => comptaWorkflowApi.listLots(params),
   });
 
 export const useCreateLotTraitement = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload: LotTraitementCreatePayload) => comptaWorkflowApi.createLot(payload),
+    mutationFn: (payload: LotTraitementCreatePayload & { ecritureIds?: number[]; remarques?: string }) =>
+      comptaWorkflowApi.createLot(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['compta', 'lots'] });
       queryClient.invalidateQueries({ queryKey: ['compta', 'bordereaux'] });
+      queryClient.invalidateQueries({ queryKey: ['compta', 'ecritures', 'pending'] });
     },
   });
 };
+
+export const usePendingEcritures = (params?: {
+  antenneId?: number;
+  typeRecetteId?: number;
+  dateDebut?: string;
+  dateFin?: string;
+}) =>
+  useQuery({
+    queryKey: ['compta', 'ecritures', 'pending', params],
+    queryFn: () => comptaWorkflowApi.listPendingEcritures(params),
+  });
 
 export const useTraiterLot = () => {
   const queryClient = useQueryClient();

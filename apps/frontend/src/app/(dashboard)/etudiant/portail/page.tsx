@@ -32,7 +32,7 @@ export default function EtudiantPortalPage() {
   useEffect(() => {
     if (validatedTransactions.length > 0) {
       const latest = validatedTransactions[0];
-      const product = (latest.nomenclature as any)?.libelleStandard || latest.libelleProduitBrut || 'Scolarité';
+      const product = (latest.nomenclature as any)?.libelle || latest.libelleProduitBrut || 'Scolarité';
       toast.success(`Votre paiement de ${formatCurrency(Number(latest.montant))} pour ${product} a bien été rattaché à votre matricule.`);
     }
   }, [validatedTransactions.length, toast]);

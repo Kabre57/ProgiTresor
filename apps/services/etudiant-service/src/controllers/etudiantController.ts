@@ -23,6 +23,27 @@ export const validate = (schema: ZodType) => (req: Request, res: Response, next:
 };
 
 // ============================================================
+// Helper formatting for backward compatibility with Niveau
+// ============================================================
+
+const formatEtudiant = (etudiant: any): any => {
+  if (!etudiant) return etudiant;
+  if (Array.isArray(etudiant)) {
+    return etudiant.map(formatEtudiant);
+  }
+  return {
+    ...etudiant,
+    niveauId: etudiant.promotionId ?? 0,
+    niveau: etudiant.promotion ? {
+      id: etudiant.promotion.id,
+      code: etudiant.promotion.nom,
+      libelle: etudiant.promotion.nom,
+      anneeEtude: etudiant.promotion.ordre || 1,
+    } : null,
+  };
+};
+
+// ============================================================
 // Handlers
 // ============================================================
 
@@ -57,7 +78,7 @@ export const getEtudiantByMatricule = async (req: Request, res: Response, next: 
   try {
     const matricule = req.params.matricule.trim().toUpperCase();
     const etudiant = await etudiantService.getEtudiantByMatricule(matricule);
-    res.json(etudiant);
+    res.json(formatEtudiant(etudiant));
   } catch (e) {
     next(e);
   }
@@ -115,7 +136,7 @@ export const getEtudiantByMatricule = async (req: Request, res: Response, next: 
 export const createEtudiant = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const etudiant = await etudiantService.createEtudiant(req.body);
-    res.status(201).json(etudiant);
+    res.status(201).json(formatEtudiant(etudiant));
   } catch (e) {
     next(e);
   }
@@ -162,7 +183,7 @@ export const updateEtudiant = async (req: Request, res: Response, next: NextFunc
   try {
     const matricule = req.params.matricule.trim().toUpperCase();
     const updated = await etudiantService.updateEtudiant(matricule, req.body);
-    res.json(updated);
+    res.json(formatEtudiant(updated));
   } catch (e) {
     next(e);
   }
@@ -205,7 +226,7 @@ export const batchLookup = async (req: Request, res: Response, next: NextFunctio
   try {
     const { matricules } = req.body;
     const results = await etudiantService.batchLookupEtudiants(matricules);
-    res.json(results);
+    res.json(formatEtudiant(results));
   } catch (e) {
     next(e);
   }
@@ -273,7 +294,6 @@ export const getEtudiants = async (req: Request, res: Response, next: NextFuncti
     const search = req.query.search as string | undefined;
     const antenneId = parseIdOrIds(req.query.antenneId);
     const filiereId = parseIdOrIds(req.query.filiereId);
-    const niveauId = parseIdOrIds(req.query.niveauId);
     const statutId = parseIdOrIds(req.query.statutId);
     const promotion = req.query.promotion as string | string[] | undefined;
     const promotionId = parseIdOrIds(req.query.promotionId);
@@ -283,10 +303,9 @@ export const getEtudiants = async (req: Request, res: Response, next: NextFuncti
       filiereId,
       statutId,
       promotion,
-      promotionId,
-      niveauId
+      promotionId
     );
-    res.json(result);
+    res.json(formatEtudiant(result));
   } catch (e) {
     next(e);
   }
@@ -299,7 +318,7 @@ export const batchLookupIds = async (req: Request, res: Response, next: NextFunc
       return res.status(400).json({ error: 'IDs list is required' });
     }
     const result = await etudiantService.batchLookupEtudiantsByIds(ids);
-    res.json(result);
+    res.json(formatEtudiant(result));
   } catch (e) {
     next(e);
   }
@@ -309,7 +328,7 @@ export const getEtudiantByTresorPay = async (req: Request, res: Response, next: 
   try {
     const matricule = req.params.matricule.trim();
     const etudiant = await etudiantService.getEtudiantByTresorPay(matricule);
-    res.json(etudiant);
+    res.json(formatEtudiant(etudiant));
   } catch (e) {
     next(e);
   }
@@ -335,7 +354,7 @@ export const mapEtudiantTresorPay = async (req: Request, res: Response, next: Ne
     // Resolve internal etudiant ID first
     const etudiant = await etudiantService.getEtudiantByMatricule(targetMatricule);
     const updated = await etudiantService.mapEtudiantTresorPay(etudiant.id, matriculeTresorPay);
-    res.json(updated);
+    res.json(formatEtudiant(updated));
   } catch (e) {
     next(e);
   }
@@ -348,7 +367,7 @@ export const upsertTemporaryEtudiant = async (req: Request, res: Response, next:
       return res.status(400).json({ error: 'matriculeTresorPay et nomPayeur requis' });
     }
     const etudiant = await etudiantService.upsertTemporaryEtudiant({ matriculeTresorPay, nomPayeur });
-    res.status(201).json(etudiant);
+    res.status(201).json(formatEtudiant(etudiant));
   } catch (e) {
     next(e);
   }
@@ -361,7 +380,7 @@ export const upsertTemporaryEtudiantsBatch = async (req: Request, res: Response,
       return res.status(400).json({ error: 'items doit être un tableau' });
     }
     const etudiants = await etudiantService.upsertTemporaryEtudiantsBatch(items);
-    res.status(201).json(etudiants);
+    res.status(201).json(formatEtudiant(etudiants));
   } catch (e) {
     next(e);
   }
@@ -374,7 +393,7 @@ export const getMe = async (req: Request, res: Response, next: NextFunction) => 
       return res.status(401).json({ error: 'Non autorisé : aucun identifiant utilisateur transmis' });
     }
     const etudiant = await etudiantService.getEtudiantByMatricule(username);
-    res.json(etudiant);
+    res.json(formatEtudiant(etudiant));
   } catch (e) {
     next(e);
   }

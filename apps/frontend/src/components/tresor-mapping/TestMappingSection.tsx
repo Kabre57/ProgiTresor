@@ -34,7 +34,7 @@ export function TestMappingSection({ nomenclatures }: TestMappingSectionProps) {
     const term = normalizeLabel(testLabel);
 
     const exactMatch = nomenclatures.find((n) =>
-      [n.libelleBrut, n.libelleStandard, n.codeProduit].some((label) => normalizeLabel(label) === term)
+      [n.libelle, n.codeProduit].some((label) => normalizeLabel(label) === term)
     );
 
     const regexMatch = exactMatch ?? nomenclatures.find((n) => {
@@ -98,19 +98,13 @@ export function TestMappingSection({ nomenclatures }: TestMappingSectionProps) {
                     <span className="font-semibold text-slate-800 dark:text-slate-200">{testResult.match.codeProduit}</span>
                   </div>
                   <div>
-                    <span className="block text-slate-400">Libellé standard</span>
-                    <span className="font-semibold text-slate-800 dark:text-slate-200">{testResult.match.libelleStandard}</span>
+                    <span className="block text-slate-400">Libellé</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">{testResult.match.libelle}</span>
                   </div>
                   <div>
                     <span className="block text-slate-400">Type de recette</span>
                     <span className="font-semibold text-slate-800 dark:text-slate-200">
                       {testResult.match.typeRecette?.libelle || 'Non spécifié'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="block text-slate-400">Versement rattaché</span>
-                    <span className="font-semibold text-slate-800 dark:text-slate-200">
-                      {testResult.match.numVersement ? `N°${testResult.match.numVersement}` : 'Aucun'}
                     </span>
                   </div>
                 </div>

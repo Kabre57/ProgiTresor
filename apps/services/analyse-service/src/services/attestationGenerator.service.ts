@@ -80,31 +80,26 @@ export const generateAttestationPDF = async (
 
     // Column 2
     doc.font('Helvetica-Bold').fillColor('#1E293B');
-    doc.text('Niveau :', col2X, y + 15);
+    doc.text('Filière :', col2X, y + 15);
     doc.font('Helvetica').fillColor('#475569');
-    doc.text(student.niveau?.libelle || 'N/A', col2X + 80, y + 15);
+    doc.text(student.filiere?.libelle || 'N/A', col2X + 80, y + 15);
 
     doc.font('Helvetica-Bold').fillColor('#1E293B');
-    doc.text('Filière :', col2X, y + 35);
+    doc.text('Statut :', col2X, y + 35);
     doc.font('Helvetica').fillColor('#475569');
-    doc.text(student.niveau?.filiere?.libelle || 'N/A', col2X + 80, y + 35);
+    doc.text(student.statut?.libelle || 'N/A', col2X + 80, y + 35);
 
     doc.font('Helvetica-Bold').fillColor('#1E293B');
-    doc.text('Statut :', col2X, y + 55);
+    doc.text('Promotion :', col2X, y + 55);
     doc.font('Helvetica').fillColor('#475569');
-    doc.text(student.statut?.libelle || 'N/A', col2X + 80, y + 55);
-
-    doc.font('Helvetica-Bold').fillColor('#1E293B');
-    doc.text('Promotion :', col2X, y + 75);
-    doc.font('Helvetica').fillColor('#475569');
-    doc.text(student.promotion?.nom || student.promotionString || 'N/A', col2X + 80, y + 75);
+    doc.text(student.promotion?.nom || student.promotionString || 'N/A', col2X + 80, y + 55);
 
     doc.y = y + boxHeight + 20;
     doc.moveDown(0.5);
 
     // Certification statement
     doc.font('Helvetica').fontSize(11).fillColor('#1E293B').text(
-      `est à jour de l'intégralité de ses frais de scolarité obligatoires pour son niveau d'études.`,
+      `est à jour de l'intégralité de ses frais de scolarité obligatoires.`,
       { align: 'left' }
     );
     doc.moveDown(1.5);

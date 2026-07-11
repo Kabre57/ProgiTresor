@@ -1,0 +1,17 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/(dashboard)/layout,_N_T_/(dashboard)/compta/layout,_N_T_/(dashboard)/compta/lots/layout,_N_T_/(dashboard)/compta/lots/page,_N_T_/compta/lots"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/!KGRhc2hib2FyZCk/compta/lots/__PAGE__",
+    "/!KGRhc2hib2FyZCk/compta/lots",
+    "/!KGRhc2hib2FyZCk/compta",
+    "/!KGRhc2hib2FyZCk",
+    "/_index",
+    "/_head"
+  ]
+}

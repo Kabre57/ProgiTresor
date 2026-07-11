@@ -4,8 +4,6 @@ import { prisma } from '../utils/prisma';
 
 const defaultInclude = {
   typeRecette: { include: { typeFlux: true } },
-  niveau: { include: { filiere: true } },
-  statut: true,
 } satisfies Prisma.NomenclatureProduitInclude;
 
 export type NomenclatureWithRelations = Prisma.NomenclatureProduitGetPayload<{ include: typeof defaultInclude }>;
@@ -13,8 +11,6 @@ export type NomenclatureWithRelations = Prisma.NomenclatureProduitGetPayload<{ i
 export type NomenclatureFilters = {
   typeRecetteId?: number;
   typeFluxId?: number;
-  niveauId?: number;
-  statutId?: number;
   actif?: boolean;
 };
 
@@ -23,8 +19,6 @@ export const findAll = async (filters: NomenclatureFilters = {}): Promise<Nomenc
   try {
     const where: Prisma.NomenclatureProduitWhereInput = {};
     if (filters.typeRecetteId) where.typeRecetteId = filters.typeRecetteId;
-    if (filters.niveauId) where.niveauId = filters.niveauId;
-    if (filters.statutId) where.statutId = filters.statutId;
     if (filters.actif !== undefined) where.actif = filters.actif;
     if (filters.typeFluxId) {
       where.typeRecette = { typeFluxId: filters.typeFluxId };
@@ -32,7 +26,7 @@ export const findAll = async (filters: NomenclatureFilters = {}): Promise<Nomenc
 
     return await prisma.nomenclatureProduit.findMany({
       where,
-      orderBy: { libelleStandard: 'asc' },
+      orderBy: { libelle: 'asc' },
       include: defaultInclude,
     });
   }

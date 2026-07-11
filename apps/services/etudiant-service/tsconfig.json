@@ -11,10 +11,7 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "typeRoots": [
-      "./node_modules/@types"
-    ]
+    "forceConsistentCasingInFileNames": true
   },
   "include": ["src/**/*", "../../../shared/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts"]

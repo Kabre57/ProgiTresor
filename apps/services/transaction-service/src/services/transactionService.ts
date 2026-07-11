@@ -15,13 +15,15 @@ import { buildFluxMeta, type FluxMeta } from '../utils/typeFlux';
 type ResolvedEtudiant = {
   id: number;
   antenneId: number;
+  statutId?: number | null;
+  promotionId?: number | null;
   matricule?: string | null;
   matriculeTresorPay?: string | null;
   lookupKey?: string | null;
   lookupKeys?: string[] | null;
 };
 
-type EtudiantMapValue = { id: number; antenneId: number };
+type EtudiantMapValue = { id: number; antenneId: number; statutId?: number | null; promotionId?: number | null };
 type NomenclatureMapValue = {
   id: number;
   typeFluxId: number;
@@ -32,10 +34,14 @@ type NomenclatureMapValue = {
   versement?: string | null;
   montant?: number | string | bigint | null;
   regexPattern?: string | null;
+  libelle?: string | null;
+  codeProduit?: string | null;
+  statutId?: number | null;
+  promotionId?: number | null;
 };
 
 type NomenclatureIndex = {
-  byExactLabel: Map<string, NomenclatureMapValue>;
+  all: NomenclatureMapValue[];
   byId: Map<number, NomenclatureMapValue>;
   regexRules: Array<{ pattern: RegExp; source: string; nomenclature: NomenclatureMapValue }>;
 };
@@ -60,7 +66,7 @@ const fetchTypeFluxMap = async (): Promise<Map<number, FluxMeta>> => {
 };
 
 const buildNomenclatureIndex = (items: any[]): NomenclatureIndex => {
-  const byExactLabel = new Map<string, NomenclatureMapValue>();
+  const all: NomenclatureMapValue[] = [];
   const byId = new Map<number, NomenclatureMapValue>();
   const regexRules: NomenclatureIndex['regexRules'] = [];
 
@@ -77,22 +83,20 @@ const buildNomenclatureIndex = (items: any[]): NomenclatureIndex => {
       id: Number(nom.id),
       typeFluxId,
       typeRecetteId: nom.typeRecetteId ?? nom.typeRecette?.id ?? null,
-      typeFrais: nom.typeRecette?.code || nom.typeRecette?.libelle || null,
-      niveau: nom.niveau?.code || nom.niveau?.libelle || null,
-      filiere: nom.niveau?.filiere?.code || nom.niveau?.filiere?.libelle || null,
-      versement: nom.numVersement ? `VERSEMENT_${nom.numVersement}` : null,
+      typeFrais: nom.typeRecette?.libelle || nom.typeRecette?.code || null,
+      niveau: null,
+      filiere: null,
+      versement: null,
       montant: nom.montant ?? null,
       regexPattern: nom.regexPattern ?? null,
+      libelle: nom.libelle ?? null,
+      codeProduit: nom.codeProduit ?? null,
+      statutId: null,
+      promotionId: null,
     };
 
     byId.set(value.id, value);
-
-    for (const label of [nom.libelleBrut, nom.libelleStandard, nom.codeProduit]) {
-      const normalized = normalizeFinancialLabel(label);
-      if (normalized) {
-        byExactLabel.set(normalized, value);
-      }
-    }
+    all.push(value);
 
     if (nom.regexPattern) {
       try {
@@ -107,23 +111,72 @@ const buildNomenclatureIndex = (items: any[]): NomenclatureIndex => {
     }
   }
 
-  return { byExactLabel, byId, regexRules };
+  return { all, byId, regexRules };
 };
 
-const resolveNomenclature = (index: NomenclatureIndex, libelle: unknown): NomenclatureMapValue | null => {
+const resolveNomenclature = (
+  index: NomenclatureIndex,
+  libelle: unknown,
+  context?: { statutId?: number | null; promotionId?: number | null; typeRecette?: string | null; promotion?: string | null }
+): NomenclatureMapValue | null => {
   const normalized = normalizeFinancialLabel(libelle);
   if (!normalized) return null;
 
-  const exact = index.byExactLabel.get(normalized);
-  if (exact) return exact;
-
+  // 1. Try regex pattern match first
   for (const rule of index.regexRules) {
     if (rule.pattern.test(normalized)) {
       return rule.nomenclature;
     }
   }
 
-  return null;
+  // 2. Try exact or fuzzy substring matches on all nomenclatures
+  const candidates = index.all.filter(nom => {
+    const nomLib = nom.libelle ? normalizeFinancialLabel(nom.libelle) : '';
+    const nomCode = nom.codeProduit ? normalizeFinancialLabel(nom.codeProduit) : '';
+    return (
+      (nomLib && (nomLib.includes(normalized) || normalized.includes(nomLib))) ||
+      (nomCode && (nomCode.includes(normalized) || normalized.includes(nomCode)))
+    );
+  });
+
+  if (candidates.length === 0) return null;
+  if (candidates.length === 1) return candidates[0];
+
+  // 3. Filter using context if we have multiple candidates
+  if (context) {
+    let filtered = candidates;
+
+    if (context.statutId) {
+      filtered = filtered.filter(c => c.statutId === context.statutId);
+    }
+    if (context.promotionId) {
+      filtered = filtered.filter(c => c.promotionId === context.promotionId);
+    }
+
+    if (filtered.length === 1) return filtered[0];
+
+    if (context.promotion) {
+      const normPromo = context.promotion.toLowerCase().trim();
+      const promoFiltered = filtered.filter(c => 
+        c.niveau && (c.niveau.toLowerCase().includes(normPromo) || normPromo.includes(c.niveau.toLowerCase()))
+      );
+      if (promoFiltered.length > 0) filtered = promoFiltered;
+    }
+
+    if (filtered.length === 1) return filtered[0];
+
+    if (context.typeRecette) {
+      const normTR = context.typeRecette.toLowerCase().trim();
+      const trFiltered = filtered.filter(c => 
+        c.typeFrais && (c.typeFrais.toLowerCase().includes(normTR) || normTR.includes(c.typeFrais.toLowerCase()))
+      );
+      if (trFiltered.length > 0) filtered = trFiltered;
+    }
+
+    if (filtered.length > 0) return filtered[0];
+  }
+
+  return candidates[0];
 };
 
 const addResolvedEtudiant = (
@@ -133,7 +186,12 @@ const addResolvedEtudiant = (
 ) => {
   if (!etudiant?.id || !etudiant?.antenneId) return;
 
-  const resolvedVal = { id: etudiant.id, antenneId: etudiant.antenneId };
+  const resolvedVal = {
+    id: etudiant.id,
+    antenneId: etudiant.antenneId,
+    statutId: etudiant.statutId ?? null,
+    promotionId: etudiant.promotionId ?? null,
+  };
   const keys = [
     etudiant.matricule,
     etudiant.matriculeTresorPay,
@@ -214,7 +272,7 @@ export const importTransactions = async (payload: ImportPayloadInput): Promise<{
 
   // 3. Fetch active nomenclatures to resolve financial classification dynamically.
   let nomenclatureIndex: NomenclatureIndex = {
-    byExactLabel: new Map(),
+    all: [],
     byId: new Map(),
     regexRules: [],
   };
@@ -229,6 +287,72 @@ export const importTransactions = async (payload: ImportPayloadInput): Promise<{
     }
   } catch (err) {
     logger.warn(err, 'Failed to fetch nomenclatures for import resolution');
+  }
+
+  // Fetch active antennas to resolve regional branches dynamically.
+  let antennasList: any[] = [];
+  try {
+    const ants = await fetchEtudiantJson<any[]>('/antennes', {
+      headers: {
+        'Accept': 'application/json',
+      },
+    }, []);
+    if (Array.isArray(ants)) {
+      antennasList = ants;
+    }
+  } catch (err) {
+    logger.warn(err, 'Failed to fetch antennas for import resolution');
+  }
+
+  const normalizeForMatch = (str: string): string => {
+    return str
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim();
+  };
+
+  const matchAntenne = (excelAnt: string | null | undefined): number | null => {
+    if (!excelAnt) return null;
+    const normExcel = normalizeForMatch(excelAnt);
+    const cleanExcel = normExcel.replace(/^infas\s+/, '').trim();
+
+    const found = antennasList.find(a => {
+      const normCode = normalizeForMatch(a.code);
+      const normNom = normalizeForMatch(a.nom);
+      const cleanNom = normNom.replace(/^antenne\s+/, '').trim();
+
+      return (
+        cleanExcel === normCode ||
+        cleanExcel === cleanNom ||
+        normExcel.includes(normCode) ||
+        normExcel.includes(cleanNom) ||
+        normNom.includes(cleanExcel)
+      );
+    });
+    return found ? found.id : null;
+  };
+
+  // Pre-resolve antenne and niveau properties on items
+  for (const item of uniqueItems) {
+    if (!item.antenneId && (item as any).antenne) {
+      const matchedId = matchAntenne((item as any).antenne);
+      if (matchedId) {
+        item.antenneId = matchedId;
+      }
+    }
+
+    let resolvedNomenclature: NomenclatureMapValue | null = null;
+    if (item.nomenclatureId) {
+      resolvedNomenclature = nomenclatureIndex.byId.get(Number(item.nomenclatureId)) ?? null;
+    }
+    if (!resolvedNomenclature && item.libelleProduitBrut) {
+      resolvedNomenclature = resolveNomenclature(nomenclatureIndex, item.libelleProduitBrut);
+    }
+    if (resolvedNomenclature) {
+      item.nomenclatureId = resolvedNomenclature.id;
+      if (!item.niveau) item.niveau = resolvedNomenclature.niveau;
+    }
   }
 
   // Create ImportFichier log record
@@ -247,16 +371,24 @@ export const importTransactions = async (payload: ImportPayloadInput): Promise<{
   const transactionsToCreate: any[] = [];
 
   // 3.5 Pre-create missing temporary students in bulk
-  const missingMatricules: { matriculeTresorPay: string; nomPayeur: string }[] = [];
+  const missingMatricules: { matriculeTresorPay: string; nom: string; prenom: string; antenneId?: number; filiere?: string }[] = [];
   const seenMissing = new Set<string>();
 
   for (const item of uniqueItems) {
     const matCandidate = normalizeLookupKey(item.matriculeTresorPay || (item as any).matricule || item.etudiantMatricule || '');
     if (matCandidate && !etudiantMap.has(matCandidate) && !seenMissing.has(matCandidate)) {
       seenMissing.add(matCandidate);
+      const payeurName = item.nomPayeurBrut || 'Payeur Inconnu';
+      const parts = payeurName.trim().split(/\s+/);
+      const nom = parts[0] || 'TRESORPAY';
+      const prenom = parts.slice(1).join(' ') || 'PAYEUR';
+
       missingMatricules.push({
         matriculeTresorPay: matCandidate,
-        nomPayeur: item.nomPayeurBrut || 'Payeur Inconnu',
+        nom,
+        prenom,
+        antenneId: item.antenneId ?? undefined,
+        filiere: item.filiere ?? undefined,
       });
     }
   }
@@ -325,7 +457,19 @@ export const importTransactions = async (payload: ImportPayloadInput): Promise<{
       }
 
       if (!resolvedNomenclature) {
-        resolvedNomenclature = resolveNomenclature(nomenclatureIndex, item.libelleProduitBrut);
+        let statutId = null;
+        let promotionId = null;
+        if (etudiantId && etudiantMap.has(matCandidate)) {
+          const resolved = etudiantMap.get(matCandidate)!;
+          statutId = resolved.statutId ?? null;
+          promotionId = resolved.promotionId ?? null;
+        }
+        resolvedNomenclature = resolveNomenclature(nomenclatureIndex, item.libelleProduitBrut, {
+          statutId,
+          promotionId,
+          typeRecette: item.typeRecette,
+          promotion: item.niveau,
+        });
       }
 
       if (resolvedNomenclature) {

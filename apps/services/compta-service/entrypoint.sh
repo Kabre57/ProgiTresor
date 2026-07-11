@@ -15,7 +15,7 @@ echo "Generating Prisma client..."
 npx prisma generate
 
 echo "Synchronizing database schema..."
-npx prisma migrate deploy || npx prisma db push
+npx prisma migrate deploy
 
 echo "Starting compta-service..."
 exec node dist/apps/services/compta-service/src/index.js

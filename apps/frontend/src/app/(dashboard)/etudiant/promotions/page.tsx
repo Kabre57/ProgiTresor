@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { DataTable } from '@/components/ui/DataTable';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -16,38 +16,27 @@ import { formatDate } from '@/lib/utils/format';
 import { cn } from '@/lib/utils/cn';
 
 export default function PromotionsPage() {
-  const [selectedPromotion, setSelectedPromotion] = useState<string | null>(null);
+  const [selectedPromotionId, setSelectedPromotionId] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterAntenne, setFilterAntenne] = useState<number | undefined>(undefined);
-  const [filterNiveau, setFilterNiveau] = useState<number | undefined>(undefined);
   const [filterFiliere, setFilterFiliere] = useState<number | undefined>(undefined);
   
   const toast = useToast();
   const promotionsQuery = usePromotions();
   const antennasQuery = useReferential('antennes');
-  const niveauxQuery = useReferential('niveaux');
   const filieresQuery = useReferential('filieres');
 
   const etudiantQuery = useEtudiants({
     search: searchTerm || undefined,
     antenneId: filterAntenne,
-    niveauId: filterNiveau,
     filiereId: filterFiliere,
-    promotion: selectedPromotion || undefined
+    promotionId: selectedPromotionId || undefined
   });
 
   const antenneOptions = [
     { label: 'Toutes les antennes', value: 0 },
     ...(antennasQuery.data ?? []).map((item: any) => ({
       label: `${item.code} - ${item.nom}`,
-      value: item.id,
-    })),
-  ];
-
-  const niveauOptions = [
-    { label: 'Tous les niveaux', value: 0 },
-    ...(niveauxQuery.data ?? []).map((item: any) => ({
-      label: item.libelle || item.code,
       value: item.id,
     })),
   ];
@@ -60,22 +49,37 @@ export default function PromotionsPage() {
     })),
   ];
 
-  const handleSelectPromotion = (promo: string | null) => {
-    setSelectedPromotion(promo);
+  const handleSelectPromotion = (promoId: number | null) => {
+    setSelectedPromotionId(promoId);
   };
 
   const columns = [
     { key: 'matricule', header: 'Matricule', render: (row: any) => <Badge tone="info">{row.matricule}</Badge> },
     { key: 'nom', header: 'Nom complet', render: (row: any) => `${row.nom} ${row.prenom}` },
-    { key: 'promotion', header: 'Promotion', render: (row: any) => row.promotion?.nom || row.promotionString || '-' },
+    { key: 'promotion', header: 'Promotion', render: (row: any) => {
+      const p = row.promotion;
+      const label = p?.niveau ? `${p.niveau} ${p.ordre}` : (p?.nom || row.promotionString || '-');
+      return label;
+    }},
     { key: 'antenne', header: 'Antenne', render: (row: any) => row.antenne?.nom ?? row.antenneId },
-    { key: 'niveau', header: 'Niveau', render: (row: any) => row.niveau?.libelle || row.niveauId || '-' },
-    { key: 'filiere', header: 'Filière', render: (row: any) => row.niveau?.filiere?.libelle || row.niveau?.filiereId || '-' },
+    { key: 'filiere', header: 'Filière', render: (row: any) => row.filiere?.libelle || row.filiereId || '-' },
     { key: 'statut', header: 'Statut', render: (row: any) => row.statut?.libelle ?? row.statutId },
   ];
 
   const listPromotions = promotionsQuery.data ?? [];
   const etudiantList = etudiantQuery.data ?? [];
+
+  const selectedPromoObj = useMemo(() => {
+    if (!selectedPromotionId) return null;
+    return listPromotions.find((p) => p.id === selectedPromotionId) || null;
+  }, [selectedPromotionId, listPromotions]);
+
+  const selectedPromoLabel = useMemo(() => {
+    if (!selectedPromoObj) return 'Toutes les promotions';
+    return selectedPromoObj.niveau
+      ? `${selectedPromoObj.niveau} ${selectedPromoObj.ordre}`
+      : (selectedPromoObj.nom || `Promotion #${selectedPromoObj.id}`);
+  }, [selectedPromoObj]);
 
   return (
     <div className="space-y-6">
@@ -110,7 +114,7 @@ export default function PromotionsPage() {
                   onClick={() => handleSelectPromotion(null)}
                   className={cn(
                     'w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg transition-colors font-medium',
-                    selectedPromotion === null
+                    selectedPromotionId === null
                       ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
                       : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                   )}
@@ -125,17 +129,17 @@ export default function PromotionsPage() {
                   <button
                     key={promo.id}
                     type="button"
-                    onClick={() => handleSelectPromotion(promo.nom)}
+                    onClick={() => handleSelectPromotion(promo.id)}
                     className={cn(
                       'w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg transition-colors font-medium',
-                      selectedPromotion === promo.nom
+                      selectedPromotionId === promo.id
                         ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
                         : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                     )}
                   >
                     <div className="flex items-center gap-2.5">
                       <Calendar className="h-4 w-4 text-slate-400" />
-                      <span>{promo.nom}</span>
+                      <span>{promo.niveau ? `${promo.niveau} ${promo.ordre}` : promo.nom}</span>
                     </div>
                   </button>
                 ))}
@@ -149,7 +153,7 @@ export default function PromotionsPage() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-semibold">
-                Filtres - {selectedPromotion ? selectedPromotion : 'Toutes les promotions'}
+                Filtres - {selectedPromoLabel}
               </CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
@@ -167,14 +171,7 @@ export default function PromotionsPage() {
                 onChange={(e) => setFilterAntenne(e.target.value ? Number(e.target.value) : undefined)}
                 searchable
               />
-              <Select
-                label="Niveau"
-                placeholder="Tous les niveaux"
-                options={niveauOptions}
-                value={filterNiveau || 0}
-                onChange={(e) => setFilterNiveau(e.target.value ? Number(e.target.value) : undefined)}
-                searchable
-              />
+
               <Select
                 label="Filière"
                 placeholder="Toutes les filières"

@@ -13,9 +13,4 @@ export * from './transaction.types';
 export * from './order.types';
 export * from './compta.types';
 export * from './budget.types';
-export {
-  ConfigurationFraisNiveauCreateSchema,
-  ConfigurationFraisNiveauUpdateSchema,
-  type ConfigurationFraisNiveauCreateInput,
-  type ConfigurationFraisNiveauUpdateInput,
-} from './etudiant.types';
+

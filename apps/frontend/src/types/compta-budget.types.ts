@@ -88,6 +88,7 @@ export type LotTraitement = {
   montantTotal: AmountValue;
   nombreEcritures: number;
   bordereau?: Bordereau;
+  remarques?: string | null;
 };
 
 export type ControleOpOt = {
@@ -144,13 +145,32 @@ export type BordereauListParams = {
   limit?: number;
 };
 
+
+export type LotTraitementListParams = {
+  statut?: string;
+  dateDebut?: string;
+  dateFin?: string;
+  codeOt?: string;
+  titre?: string;
+  utilisateur?: string;
+  montantMin?: number;
+  montantMax?: number;
+  search?: string;
+  sortBy?: 'dateCreation' | 'montantTotal' | 'nombreEcritures' | 'reference' | 'statut';
+  sortOrder?: 'asc' | 'desc';
+  page?: number;
+  limit?: number;
+};
+
 export type LotTraitementCreatePayload = {
-  bordereauId: number;
+  bordereauId?: number;
   reference?: string;
   dateDebutFlux?: string;
   dateFinFlux?: string;
   typeRecetteId?: number;
   antenneId?: number;
+  ecritureIds?: number[];
+  remarques?: string;
 };
 
 export type LotTraitementProcessPayload = {

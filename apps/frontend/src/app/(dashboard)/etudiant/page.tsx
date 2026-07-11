@@ -19,7 +19,6 @@ export default function EtudiantsPage() {
 
   const antennesQuery = useReferential('antennes');
   const filieresQuery = useReferential('filieres');
-  const niveauxQuery = useReferential('niveaux');
   const statutsQuery = useReferential('statuts-etudiants');
   const promotionsQuery = usePromotions();
   const etudiantQuery = useEtudiants({
@@ -52,7 +51,6 @@ export default function EtudiantsPage() {
             <EtudiantListTableTools
               antennes={antennesQuery.data ?? []}
               filieres={filieresQuery.data ?? []}
-              niveaux={niveauxQuery.data ?? []}
               statuts={statutsQuery.data ?? []}
               promotions={promotionsQuery.data ?? []}
             />

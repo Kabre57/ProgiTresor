@@ -189,9 +189,9 @@ export const getKpis = async (req: Request, res: Response, next: NextFunction): 
           const count = group._count?.id || 0;
           for (const nom of nomenclatures) {
             if (!nom.actif) continue;
-            const niveauMatches = nom.niveauId === null || nom.niveauId === undefined || nom.niveauId === group.niveauId;
+            const promotionMatches = nom.promotionId === null || nom.promotionId === undefined || nom.promotionId === group.promotionId;
             const statutMatches = nom.statutId === null || nom.statutId === undefined || nom.statutId === group.statutId;
-            if (niveauMatches && statutMatches) {
+            if (promotionMatches && statutMatches) {
               const typeFluxId = nom.typeRecette?.typeFluxId ?? nom.typeRecette?.typeFlux?.id ?? null;
               const flux = getFluxMeta(typeFluxMap, typeFluxId, nom.typeRecette?.typeFlux);
               const amount = Number(nom.montant ?? 0) * count;
@@ -470,8 +470,8 @@ export const getGroupedByRecette = async (req: Request, res: Response, next: Nex
     const typeFluxMap = await fetchTypeFluxMap();
 
     // Fetch nomenclatures from etudiant-service
-    const nomMap = new Map<number, { id: number; libelleStandard: string; typeRecetteLibelle: string; flux: FluxMeta }>();
-    const nomByLibelleMap = new Map<string, { id: number; libelleStandard: string; typeRecetteLibelle: string; flux: FluxMeta }>();
+    const nomMap = new Map<number, { id: number; libelle: string; typeRecetteLibelle: string; flux: FluxMeta }>();
+    const nomByLibelleMap = new Map<string, { id: number; libelle: string; typeRecetteLibelle: string; flux: FluxMeta }>();
     try {
       const nomenclatures = await fetchEtudiantJson<any[]>('/nomenclatures', undefined, []);
       if (Array.isArray(nomenclatures)) {
@@ -480,18 +480,14 @@ export const getGroupedByRecette = async (req: Request, res: Response, next: Nex
           const flux = getFluxMeta(typeFluxMap, typeFluxId, nom.typeRecette?.typeFlux);
           const meta = {
             id: nom.id,
-            libelleStandard: nom.libelleStandard,
+            libelle: nom.libelle,
             typeRecetteLibelle: nom.typeRecette?.libelle || 'Autre',
             flux,
           };
           nomMap.set(nom.id, meta);
-          if (nom.libelleBrut) {
-            nomByLibelleMap.set(nom.libelleBrut.trim().toUpperCase(), meta);
-            nomByLibelleMap.set(normalizeAndSortWords(nom.libelleBrut), meta);
-          }
-          if (nom.libelleStandard) {
-            nomByLibelleMap.set(nom.libelleStandard.trim().toUpperCase(), meta);
-            nomByLibelleMap.set(normalizeAndSortWords(nom.libelleStandard), meta);
+          if (nom.libelle) {
+            nomByLibelleMap.set(nom.libelle.trim().toUpperCase(), meta);
+            nomByLibelleMap.set(normalizeAndSortWords(nom.libelle), meta);
           }
         }
       }
@@ -511,10 +507,10 @@ export const getGroupedByRecette = async (req: Request, res: Response, next: Nex
     });
 
     // Grouping structure: key is nomenclatureId (or raw libelle if null)
-    // We map it to: { libelleStandard, typeRecette, typeFluxCode, montantBudget, montantHorsBudget, montantTotal, nombreFlux, transactionIds }
+    // We map it to: { libelle, typeRecette, typeFluxCode, montantBudget, montantHorsBudget, montantTotal, nombreFlux, transactionIds }
     const resultsMap = new Map<string, {
       nomenclatureId: number | null;
-      libelleStandard: string;
+      libelle: string;
       typeRecette: string;
       typeFluxCode: string;
       montantBudget: bigint;
@@ -547,7 +543,7 @@ export const getGroupedByRecette = async (req: Request, res: Response, next: Nex
       const fluxCount = group._count?._all || 0;
 
       let key = '';
-      let libelleStandard = '';
+      let libelle = '';
       let typeRecette = '';
       let nomenclatureId: number | null = null;
       let flux = getFluxMeta(typeFluxMap, group.typeFluxId);
@@ -560,14 +556,14 @@ export const getGroupedByRecette = async (req: Request, res: Response, next: Nex
 
       if (matchedNom) {
         nomenclatureId = matchedNom.id;
-        libelleStandard = matchedNom.libelleStandard;
+        libelle = matchedNom.libelle;
         typeRecette = matchedNom.typeRecetteLibelle;
         flux = matchedNom.flux;
         key = `nom-${matchedNom.id}`;
       } else {
-        libelleStandard = group.libelleProduitBrut || 'Autre Recette';
+        libelle = group.libelleProduitBrut || 'Autre Recette';
         typeRecette = 'Non classifié';
-        key = `raw-${libelleStandard}`;
+        key = `raw-${libelle}`;
       }
 
       const groupWhere: Prisma.TransactionWhereInput = {
@@ -592,7 +588,7 @@ export const getGroupedByRecette = async (req: Request, res: Response, next: Nex
       } else {
         const entry = {
           nomenclatureId,
-          libelleStandard,
+          libelle,
           typeRecette,
           typeFluxCode: flux.code || (flux.kind === 'budget' ? 'BUDGET' : flux.kind === 'hors-budget' ? 'HORS_BUDGET' : 'UNKNOWN'),
           montantBudget: flux.kind === 'budget' ? sumMontant : 0n,
@@ -609,7 +605,7 @@ export const getGroupedByRecette = async (req: Request, res: Response, next: Nex
 
     const results = Array.from(resultsMap.values()).map((r) => ({
       nomenclatureId: r.nomenclatureId,
-      libelleStandard: r.libelleStandard,
+      libelle: r.libelle,
       typeRecette: r.typeRecette,
       typeFluxCode: r.typeFluxCode,
       montantBudget: Number(r.montantBudget),

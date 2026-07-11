@@ -29,13 +29,11 @@ const ReferentialImportDialog = ({ isOpen, onClose, onImported, entity, title }:
   const getExpectedColumns = (entityName: ReferentialEndpoint) => {
     switch (entityName) {
       case 'promotions':
-        return 'nom, ordre';
+        return 'nom, ordre, niveau';
       case 'antennes':
         return 'code, nom, ville';
       case 'filieres':
-        return 'code, libelle';
-      case 'niveaux':
-        return 'code, libelle, cycle, anneeetude, filierecode';
+        return 'code, libelle, abreviation';
       case 'statuts-etudiants':
         return 'code, libelle';
       case 'types-flux':
@@ -43,7 +41,7 @@ const ReferentialImportDialog = ({ isOpen, onClose, onImported, entity, title }:
       case 'types-recettes':
         return 'code, libelle, typefluxcode';
       case 'nomenclatures':
-        return 'libellebrut, codeproduit, libellestandard, typerecettecode, niveaucode, statutcode, numversement, montant';
+        return 'codeproduit, libelle, typerecettecode, montant';
       default:
         return '';
     }

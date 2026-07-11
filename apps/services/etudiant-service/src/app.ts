@@ -1,5 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import { prisma } from './utils/prisma';
 import swaggerJSDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import multer from 'multer';
@@ -31,13 +32,11 @@ import {
 import { uploadEtudiantPhoto, deleteEtudiantPhoto } from './controllers/photoController';
 import * as antenneCtrl from './controllers/antenneController';
 import * as filiereCtrl from './controllers/filiereController';
-import * as niveauCtrl from './controllers/niveauController';
 import * as statutCtrl from './controllers/statutEtudiantController';
 import * as typeFluxCtrl from './controllers/typeFluxController';
 import * as typeRecetteCtrl from './controllers/typeRecetteController';
 import * as nomenclatureCtrl from './controllers/nomenclatureProduitController';
 import * as promotionCtrl from './controllers/promotionController';
-import * as configFraisNiveauCtrl from './controllers/configurationFraisNiveauController';
 import {
   EtudiantCreateSchema,
   EtudiantUpdateSchema,
@@ -46,8 +45,6 @@ import {
   AntenneUpdateSchema,
   FiliereCreateSchema,
   FiliereUpdateSchema,
-  NiveauCreateSchema,
-  NiveauUpdateSchema,
   StatutEtudiantCreateSchema,
   StatutEtudiantUpdateSchema,
   TypeFluxCreateSchema,
@@ -58,8 +55,6 @@ import {
   NomenclatureProduitUpdateSchema,
   PromotionCreateSchema,
   PromotionUpdateSchema,
-  ConfigurationFraisNiveauCreateSchema,
-  ConfigurationFraisNiveauUpdateSchema,
 } from '../../../../shared/types/etudiant.types';
 import { httpRequestDurationMs } from './utils/metrics';
 
@@ -113,7 +108,8 @@ const swaggerOptions = {
             filiere: { $ref: '#/components/schemas/Filiere' },
             statutId: { type: 'integer' },
             statut: { $ref: '#/components/schemas/StatutEtudiant' },
-            dateCreation: { type: 'string', format: 'date-time' }
+            dateCreation: { type: 'string', format: 'date-time' },
+            nomenclatures: { type: 'array', items: { $ref: '#/components/schemas/NomenclatureProduit' } }
           }
         },
         Antenne: {
@@ -143,11 +139,10 @@ const swaggerOptions = {
             id: { type: 'integer' },
             code: { type: 'string' },
             libelle: { type: 'string' },
-            cycle: { type: 'string' },
-            anneeEtude: { type: 'integer' }
+            abreviation: { type: 'string' }
           }
         },
-        FiliereCreate: { type: 'object', required: ['code', 'libelle', 'cycle', 'anneeEtude'], properties: { code: { type: 'string' }, libelle: { type: 'string' }, cycle: { type: 'string' }, anneeEtude: { type: 'integer' } } },
+        FiliereCreate: { type: 'object', required: ['code', 'libelle', 'abreviation'], properties: { code: { type: 'string' }, libelle: { type: 'string' }, abreviation: { type: 'string' } } },
         StatutEtudiant: {
           type: 'object',
           properties: { id: { type: 'integer' }, code: { type: 'string' }, libelle: { type: 'string' } }
@@ -165,9 +160,9 @@ const swaggerOptions = {
         TypeRecetteCreate: { type: 'object', required: ['code', 'libelle', 'typeFluxId'], properties: { code: { type: 'string' }, libelle: { type: 'string' }, typeFluxId: { type: 'integer' } } },
         NomenclatureProduit: {
           type: 'object',
-          properties: { id: { type: 'integer' }, libelleBrut: { type: 'string' }, codeProduit: { type: 'string' }, libelleStandard: { type: 'string' }, regexPattern: { type: 'string', nullable: true }, typeRecetteId: { type: 'integer' }, niveauId: { type: 'integer', nullable: true }, filiereId: { type: 'integer', nullable: true, deprecated: true }, statutId: { type: 'integer', nullable: true }, numVersement: { type: 'integer', nullable: true }, montant: { type: 'integer', minimum: 0, default: 0 }, actif: { type: 'boolean' } }
+          properties: { id: { type: 'integer' }, codeProduit: { type: 'string' }, libelle: { type: 'string' }, regexPattern: { type: 'string', nullable: true }, typeRecetteId: { type: 'integer' }, filiereId: { type: 'integer', nullable: true, deprecated: true }, montant: { type: 'integer', minimum: 0, default: 0 }, actif: { type: 'boolean' } }
         },
-        NomenclatureProduitCreate: { type: 'object', required: ['libelleBrut', 'codeProduit', 'libelleStandard', 'typeRecetteId'], properties: { libelleBrut: { type: 'string' }, codeProduit: { type: 'string' }, libelleStandard: { type: 'string' }, regexPattern: { type: 'string', nullable: true }, typeRecetteId: { type: 'integer' }, niveauId: { type: 'integer', nullable: true }, filiereId: { type: 'integer', nullable: true, deprecated: true }, statutId: { type: 'integer', nullable: true }, numVersement: { type: 'integer', nullable: true }, montant: { type: 'integer', minimum: 0, default: 0 }, actif: { type: 'boolean' } } },
+        NomenclatureProduitCreate: { type: 'object', required: ['codeProduit', 'libelle', 'typeRecetteId'], properties: { codeProduit: { type: 'string' }, libelle: { type: 'string' }, regexPattern: { type: 'string', nullable: true }, typeRecetteId: { type: 'integer' }, filiereId: { type: 'integer', nullable: true, deprecated: true }, montant: { type: 'integer', minimum: 0, default: 0 }, actif: { type: 'boolean' } } },
         ErrorResponse: {
           type: 'object',
           properties: { error: { type: 'object', properties: { message: { type: 'string' }, statusCode: { type: 'integer' } } } }
@@ -210,12 +205,75 @@ app.post('/filieres', authorizeRoles(...WRITE_ROLES), validate(FiliereCreateSche
 app.put('/filieres/:id', authorizeRoles(...WRITE_ROLES), validate(FiliereUpdateSchema), filiereCtrl.update);
 app.delete('/filieres/:id', authorizeRoles(...WRITE_ROLES), filiereCtrl.remove);
 
-// Routes – Niveaux CRUD
-app.get('/niveaux', niveauCtrl.getAll);
-app.get('/niveaux/:id', niveauCtrl.getById);
-app.post('/niveaux', authorizeRoles(...WRITE_ROLES), validate(NiveauCreateSchema), niveauCtrl.create);
-app.put('/niveaux/:id', authorizeRoles(...WRITE_ROLES), validate(NiveauUpdateSchema), niveauCtrl.update);
-app.delete('/niveaux/:id', authorizeRoles(...WRITE_ROLES), niveauCtrl.remove);
+// ============================================================
+// Dummy routes for backward compatibility with Niveau
+// ============================================================
+app.get('/niveaux', async (req, res, next) => {
+  try {
+    const list = await prisma.promotion.findMany({ orderBy: { ordre: 'asc' } });
+    const mapped = list.map((p) => ({
+      id: p.id,
+      code: p.niveau ? `${p.niveau} ${p.ordre}` : p.nom,
+      libelle: p.niveau ? `${p.niveau} ${p.ordre}` : p.nom,
+      anneeEtude: p.ordre || 1,
+    }));
+    res.json(mapped);
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.get('/niveaux/:id', async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const p = await prisma.promotion.findUnique({ where: { id } });
+    if (!p) {
+      return res.status(404).json({ error: 'Niveau not found' });
+    }
+    res.json({
+      id: p.id,
+      code: p.niveau ? `${p.niveau} ${p.ordre}` : p.nom,
+      libelle: p.niveau ? `${p.niveau} ${p.ordre}` : p.nom,
+      anneeEtude: p.ordre || 1,
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.get('/niveau', async (req, res, next) => {
+  try {
+    const list = await prisma.promotion.findMany({ orderBy: { ordre: 'asc' } });
+    const mapped = list.map((p) => ({
+      id: p.id,
+      code: p.niveau ? `${p.niveau} ${p.ordre}` : p.nom,
+      libelle: p.niveau ? `${p.niveau} ${p.ordre}` : p.nom,
+      anneeEtude: p.ordre || 1,
+    }));
+    res.json(mapped);
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.get('/niveau/:id', async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const p = await prisma.promotion.findUnique({ where: { id } });
+    if (!p) {
+      return res.status(404).json({ error: 'Niveau not found' });
+    }
+    res.json({
+      id: p.id,
+      code: p.niveau ? `${p.niveau} ${p.ordre}` : p.nom,
+      libelle: p.niveau ? `${p.niveau} ${p.ordre}` : p.nom,
+      anneeEtude: p.ordre || 1,
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
 
 // ============================================================
 // Routes – Statuts Étudiants CRUD
@@ -274,14 +332,6 @@ app.post('/nomenclature-produit', authorizeRoles(...WRITE_ROLES), validate(Nomen
 app.put('/nomenclature-produit/:id', authorizeRoles(...WRITE_ROLES), validate(NomenclatureProduitUpdateSchema), nomenclatureCtrl.update);
 app.delete('/nomenclature-produit/:id', authorizeRoles(...WRITE_ROLES), nomenclatureCtrl.remove);
 
-// ============================================================
-// Routes – Configuration Frais Niveau CRUD
-// ============================================================
-app.get('/configuration-frais-niveau', configFraisNiveauCtrl.getAll);
-app.get('/configuration-frais-niveau/:id', configFraisNiveauCtrl.getById);
-app.post('/configuration-frais-niveau', authorizeRoles(...WRITE_ROLES), validate(ConfigurationFraisNiveauCreateSchema), configFraisNiveauCtrl.create);
-app.put('/configuration-frais-niveau/:id', authorizeRoles(...WRITE_ROLES), validate(ConfigurationFraisNiveauUpdateSchema), configFraisNiveauCtrl.update);
-app.delete('/configuration-frais-niveau/:id', authorizeRoles(...WRITE_ROLES), configFraisNiveauCtrl.remove);
 
 // ============================================================
 // Routes – Etudiants

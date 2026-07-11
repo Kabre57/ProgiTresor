@@ -29,12 +29,13 @@ export const EtudiantCreateSchema = z.preprocess(normalizeFilierePayload, z.obje
   prenom: z.string().trim().min(1, 'Prénom is required'),
   prefixeMatricule: z.string().trim().min(1).optional().nullable(),
   antenneId: z.number().int().positive('antenneId must be a positive integer'),
-  niveauId: z.number().int().positive('niveauId must be a positive integer'),
+  filiereId: z.number().int().positive('filiereId must be a positive integer'),
   statutId: z.number().int().positive('statutId must be a positive integer'),
   matriculeTresorPay: z.string().trim().min(1, 'Matricule Trésor Pay is required'),
   promotion: z.string().trim().optional().nullable(),
   promotionId: z.number().int().positive('Promotion is required'),
   photoUrl: z.string().trim().optional().nullable(),
+  nomenclatureIds: z.array(z.number().int().positive()).optional(),
 }));
 
 /**
@@ -45,12 +46,13 @@ export const EtudiantUpdateSchema = z.preprocess(normalizeFilierePayload, z.obje
   prenom: z.string().trim().min(1).optional(),
   prefixeMatricule: z.string().trim().min(1).nullable().optional(),
   antenneId: z.number().int().positive().optional(),
-  niveauId: z.number().int().positive().optional(),
+  filiereId: z.number().int().positive().optional(),
   statutId: z.number().int().positive().optional(),
   matriculeTresorPay: z.string().trim().min(1).optional(),
   promotion: z.string().trim().optional().nullable(),
   promotionId: z.number().int().positive().optional(),
   photoUrl: z.string().trim().optional().nullable(),
+  nomenclatureIds: z.array(z.number().int().positive()).optional(),
 }));
 
 /**
@@ -80,6 +82,7 @@ export const PromotionCreateSchema = z.object({
   nom: z.string().trim().min(1, 'Nom is required').max(50),
   ordre: z.number().int().positive('Ordre must be positive'),
   actif: z.boolean().optional().default(true),
+  niveau: z.string().trim().optional().default(''),
 });
 export const PromotionUpdateSchema = PromotionCreateSchema.partial();
 
@@ -92,20 +95,12 @@ export const AntenneCreateSchema = z.object({
 });
 export const AntenneUpdateSchema = AntenneCreateSchema.partial();
 
-// --- Niveau ---
-export const NiveauCreateSchema = z.object({
-  code: z.string().trim().min(1, 'Code is required').max(10),
-  libelle: z.string().trim().min(1, 'Libellé is required').max(60),
-  cycle: z.string().trim().min(1, 'Cycle is required').max(30),
-  anneeEtude: z.number().int().positive('Année must be positive'),
-  filiereId: z.number().int().positive().optional().nullable(),
-});
-export const NiveauUpdateSchema = NiveauCreateSchema.partial();
 
 // --- Filiere ---
 export const FiliereCreateSchema = z.object({
   code: z.string().trim().min(1, 'Code is required').max(10),
   libelle: z.string().trim().min(1, 'Libellé is required').max(60),
+  abreviation: z.string().trim().min(1, 'Abréviation is required').max(30),
 });
 export const FiliereUpdateSchema = FiliereCreateSchema.partial();
 
@@ -133,13 +128,9 @@ export const TypeRecetteUpdateSchema = TypeRecetteCreateSchema.partial();
 
 // --- NomenclatureProduit ---
 export const NomenclatureProduitCreateSchema = z.preprocess(normalizeFilierePayload, z.object({
-  libelleBrut: z.string().trim().min(1, 'Libellé brut is required').max(200),
   codeProduit: z.string().trim().min(1, 'Code produit is required').max(40),
-  libelleStandard: z.string().trim().min(1, 'Libellé standard is required').max(150),
+  libelle: z.string().trim().min(1, 'Libellé is required').max(150),
   typeRecetteId: z.number().int().positive('typeRecetteId must be positive'),
-  niveauId: z.number().int().positive().optional().nullable(),
-  statutId: z.number().int().positive().optional().nullable(),
-  numVersement: z.number().int().positive().optional().nullable(),
   montant: z.number().int().nonnegative().optional().default(0),
   actif: z.boolean().optional().default(true),
   regexPattern: z.string().trim().min(1).max(500).optional().nullable(),
@@ -147,30 +138,14 @@ export const NomenclatureProduitCreateSchema = z.preprocess(normalizeFilierePayl
 export const NomenclatureProduitUpdateSchema = z.preprocess(
   normalizeFilierePayload,
   z.object({
-    libelleBrut: z.string().trim().min(1, 'Libellé brut is required').max(200).optional(),
     codeProduit: z.string().trim().min(1, 'Code produit is required').max(40).optional(),
-    libelleStandard: z.string().trim().min(1, 'Libellé standard is required').max(150).optional(),
+    libelle: z.string().trim().min(1, 'Libellé is required').max(150).optional(),
     typeRecetteId: z.number().int().positive('typeRecetteId must be positive').optional(),
-    niveauId: z.number().int().positive().optional().nullable(),
-    statutId: z.number().int().positive().optional().nullable(),
-    numVersement: z.number().int().positive().optional().nullable(),
     montant: z.number().int().nonnegative().optional(),
     actif: z.boolean().optional(),
     regexPattern: z.string().trim().min(1).max(500).optional().nullable(),
   }),
 );
-
-// --- ConfigurationFraisNiveau ---
-export const ConfigurationFraisNiveauCreateSchema = z.object({
-  nomenclatureProduitId: z.number().int().positive('nomenclatureProduitId must be positive'),
-  niveauId: z.number().int().positive('niveauId must be positive'),
-  statutEtudiantId: z.number().int().positive('statutEtudiantId must be positive'),
-  montantSpecifique: z.number().int().nonnegative().optional().nullable(),
-  estObligatoire: z.boolean().optional().default(true),
-  dateDebutValidite: z.coerce.date().optional(),
-  dateFinValidite: z.coerce.date().optional().nullable(),
-});
-export const ConfigurationFraisNiveauUpdateSchema = ConfigurationFraisNiveauCreateSchema.partial();
 
 // Types inférés – Étudiants
 export type EtudiantCreateInput = z.infer<typeof EtudiantCreateSchema>;
@@ -183,8 +158,6 @@ export type PromotionCreateInput = z.infer<typeof PromotionCreateSchema>;
 export type PromotionUpdateInput = z.infer<typeof PromotionUpdateSchema>;
 export type AntenneCreateInput = z.infer<typeof AntenneCreateSchema>;
 export type AntenneUpdateInput = z.infer<typeof AntenneUpdateSchema>;
-export type NiveauCreateInput = z.infer<typeof NiveauCreateSchema>;
-export type NiveauUpdateInput = z.infer<typeof NiveauUpdateSchema>;
 export type FiliereCreateInput = z.infer<typeof FiliereCreateSchema>;
 export type FiliereUpdateInput = z.infer<typeof FiliereUpdateSchema>;
 export type StatutEtudiantCreateInput = z.infer<typeof StatutEtudiantCreateSchema>;
@@ -195,6 +168,4 @@ export type TypeRecetteCreateInput = z.infer<typeof TypeRecetteCreateSchema>;
 export type TypeRecetteUpdateInput = z.infer<typeof TypeRecetteUpdateSchema>;
 export type NomenclatureProduitCreateInput = z.infer<typeof NomenclatureProduitCreateSchema>;
 export type NomenclatureProduitUpdateInput = z.infer<typeof NomenclatureProduitUpdateSchema>;
-export type ConfigurationFraisNiveauCreateInput = z.infer<typeof ConfigurationFraisNiveauCreateSchema>;
-export type ConfigurationFraisNiveauUpdateInput = z.infer<typeof ConfigurationFraisNiveauUpdateSchema>;
 

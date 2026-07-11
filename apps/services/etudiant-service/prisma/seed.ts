@@ -24,16 +24,6 @@ const antennesData = [
   { code: 'MAN', nom: 'INFAS MAN', ville: 'Man', actif: true },
 ] as const satisfies readonly Prisma.AntenneCreateInput[];
 
-const niveauxData = [
-  { code: 'L1', libelle: 'Licence 1', cycle: 'Licence', anneeEtude: 1 },
-  { code: 'L2', libelle: 'Licence 2', cycle: 'Licence', anneeEtude: 2 },
-  { code: 'L3', libelle: 'Licence 3', cycle: 'Licence', anneeEtude: 3 },
-  { code: 'A1', libelle: 'Auxiliaire 1', cycle: 'Auxiliaire', anneeEtude: 1 },
-  { code: 'A2', libelle: 'Auxiliaire 2', cycle: 'Auxiliaire', anneeEtude: 2 },
-  { code: 'A3', libelle: 'Auxiliaire 3', cycle: 'Auxiliaire', anneeEtude: 3 },
-  { code: 'SP2', libelle: 'Specialite 2', cycle: 'Specialite', anneeEtude: 2 },
-] as const;
-
 const statutsData = [
   { code: 'PUBLIC', libelle: 'Etudiant Public' },
   { code: 'PRIVE_NAT', libelle: 'Etudiant Prive National' },
@@ -46,23 +36,21 @@ const fluxData = [
 ] as const satisfies readonly Prisma.TypeFluxCreateInput[];
 
 const promotionsData = [
-  { nom: 'Première année', ordre: 1, actif: true },
-  { nom: 'Deuxième année', ordre: 2, actif: true },
-  { nom: 'Troisième année', ordre: 3, actif: true },
+  { nom: 'Première année', ordre: 1, actif: true, niveau: 'Auxiliaire' },
+  { nom: 'Première année', ordre: 1, actif: true, niveau: 'Licence' },
+  { nom: 'Deuxième année', ordre: 2, actif: true, niveau: 'L2' },
+  { nom: 'Troisième année', ordre: 3, actif: true, niveau: 'L3' },
 ] as const satisfies readonly Prisma.PromotionCreateInput[];
 
 type AntenneCode = (typeof antennesData)[number]['code'];
-type NiveauCode = (typeof niveauxData)[number]['code'];
 type StatutCode = (typeof statutsData)[number]['code'];
 type FluxCode = (typeof fluxData)[number]['code'];
 
 const requireMapValue = <T>(map: Map<string, T>, code: string, label: string): T => {
   const value = map.get(code);
-
   if (!value) {
     throw new Error(`${label} not found after upsert: ${code}`);
   }
-
   return value;
 };
 
@@ -91,31 +79,9 @@ async function main() {
   // Seed default filiere
   const filiereInfas = await prisma.filiere.upsert({
     where: { code: 'INFAS' },
-    update: {},
-    create: { code: 'INFAS', libelle: 'Institut de Formation aux Agents de Santé' }
+    update: { abreviation: 'INFAS' },
+    create: { code: 'INFAS', libelle: 'Institut de Formation aux Agents de Santé', abreviation: 'INFAS' }
   });
-
-  // Seed study levels (niveaux) linked to the default filiere
-  const niveaux = await Promise.all(
-    niveauxData.map((niveau) =>
-      prisma.niveau.upsert({
-        where: { code: niveau.code },
-        update: {
-          libelle: niveau.libelle,
-          cycle: niveau.cycle,
-          anneeEtude: niveau.anneeEtude,
-          filiereId: filiereInfas.id,
-        },
-        create: {
-          code: niveau.code,
-          libelle: niveau.libelle,
-          cycle: niveau.cycle,
-          anneeEtude: niveau.anneeEtude,
-          filiereId: filiereInfas.id,
-        },
-      }),
-    ),
-  );
 
   const statuts = await Promise.all(
     statutsData.map((statut) =>
@@ -140,10 +106,11 @@ async function main() {
   const promotions = await Promise.all(
     promotionsData.map((promo) =>
       prisma.promotion.upsert({
-        where: { nom: promo.nom },
+        where: { nom_niveau: { nom: promo.nom, niveau: promo.niveau } },
         update: {
           ordre: promo.ordre,
           actif: promo.actif,
+          niveau: promo.niveau,
         },
         create: promo,
       }),
@@ -152,9 +119,6 @@ async function main() {
 
   const antenneByCode = new Map<AntenneCode, (typeof antennes)[number]>(
     antennes.map((antenne) => [antenne.code as AntenneCode, antenne]),
-  );
-  const niveauByCode = new Map<NiveauCode, (typeof niveaux)[number]>(
-    niveaux.map((niveau) => [niveau.code as NiveauCode, niveau]),
   );
   const statutByCode = new Map<StatutCode, (typeof statuts)[number]>(
     statuts.map((statut) => [statut.code as StatutCode, statut]),
@@ -196,10 +160,6 @@ async function main() {
     recettes.map((recette) => [recette.code, recette]),
   );
 
-  const l1 = requireMapValue(niveauByCode, 'L1', 'Niveau');
-  const l2 = requireMapValue(niveauByCode, 'L2', 'Niveau');
-  const l3 = requireMapValue(niveauByCode, 'L3', 'Niveau');
-  const a1 = requireMapValue(niveauByCode, 'A1', 'Niveau');
   const publicStatut = requireMapValue(statutByCode, 'PUBLIC', 'StatutEtudiant');
   const priveNationalStatut = requireMapValue(statutByCode, 'PRIVE_NAT', 'StatutEtudiant');
 
@@ -212,105 +172,94 @@ async function main() {
   const ceremonie = requireMapValue(recetteByCode, 'CEREMONIE', 'TypeRecette');
   const assurance = requireMapValue(recetteByCode, 'ASSURANCE', 'TypeRecette');
 
+  const promo1 = promotions.find((p) => p.nom === 'Première année' && p.niveau === 'Licence')!;
+  const promo2 = promotions.find((p) => p.nom === 'Deuxième année')!;
+  const promo3 = promotions.find((p) => p.nom === 'Troisième année')!;
+
   const nomenclaturesData = [
     {
-      libelleBrut: '1ER VERSEMENT FRAIS DE SCOLARITE L1 PUBLIC',
       codeProduit: 'SCO-L1-PUB-V1',
-      libelleStandard: 'Scolarite L1 Public - Versement 1',
+      libelle: 'Scolarite L1 Public - Versement 1',
       typeRecetteId: scolarite.id,
-      niveauId: l1.id,
-      statutId: publicStatut.id,
-      numVersement: 1,
+      montant: 100000,
       actif: true,
     },
     {
-      libelleBrut: '2EME VERSEMENT FRAIS DE SCOLARITE L1 PUBLIC',
       codeProduit: 'SCO-L1-PUB-V2',
-      libelleStandard: 'Scolarite L1 Public - Versement 2',
+      libelle: 'Scolarite L1 Public - Versement 2',
       typeRecetteId: scolarite.id,
-      niveauId: l1.id,
-      statutId: publicStatut.id,
-      numVersement: 2,
+      montant: 50000,
       actif: true,
     },
     {
-      libelleBrut: 'FRAIS INSCRIPTION L1 PUBLIC',
       codeProduit: 'INS-L1-PUB',
-      libelleStandard: 'Inscription L1 Public',
+      libelle: 'Inscription L1 Public',
       typeRecetteId: inscription.id,
-      niveauId: l1.id,
-      statutId: publicStatut.id,
+      montant: 15000,
       actif: true,
     },
     {
-      libelleBrut: 'FRAIS SCOLARITE L2 PUBLIC',
       codeProduit: 'SCO-L2-PUB',
-      libelleStandard: 'Scolarite L2 Public',
+      libelle: 'Scolarite L2 Public',
       typeRecetteId: scolarite.id,
-      niveauId: l2.id,
-      statutId: publicStatut.id,
+      montant: 150000,
       actif: true,
     },
     {
-      libelleBrut: 'FRAIS SCOLARITE L3 PRIVE NATIONAL',
       codeProduit: 'SCO-L3-PRN',
-      libelleStandard: 'Scolarite L3 Prive National',
+      libelle: 'Scolarite L3 Prive National',
       typeRecetteId: scolarite.id,
-      niveauId: l3.id,
-      statutId: priveNationalStatut.id,
+      montant: 250000,
       actif: true,
     },
     {
-      libelleBrut: 'FRAIS ENCADREMENT L1',
       codeProduit: 'ENC-L1',
-      libelleStandard: 'Encadrement L1',
+      libelle: 'Encadrement L1',
       typeRecetteId: encadrement.id,
-      niveauId: l1.id,
-      statutId: publicStatut.id,
+      montant: 30000,
       actif: true,
     },
     {
-      libelleBrut: 'FRAIS DE BLOUSES',
       codeProduit: 'BLOUSE',
-      libelleStandard: 'Blouses',
+      libelle: 'Blouses',
       typeRecetteId: blouses.id,
+      montant: 10000,
       actif: true,
     },
     {
-      libelleBrut: 'KIT DE STAGE A1',
       codeProduit: 'KIT-A1',
-      libelleStandard: 'Kit de stage A1',
+      libelle: 'Kit de stage A1',
       typeRecetteId: kitStage.id,
-      niveauId: a1.id,
+      montant: 20000,
       actif: true,
     },
     {
-      libelleBrut: 'FRAIS DE VACCINATION',
       codeProduit: 'VACCIN',
-      libelleStandard: 'Vaccination',
+      libelle: 'Vaccination',
       typeRecetteId: vaccination.id,
+      montant: 5000,
       actif: true,
     },
     {
-      libelleBrut: 'FRAIS DE CEREMONIE',
       codeProduit: 'CEREM',
-      libelleStandard: 'Ceremonie',
+      libelle: 'Ceremonie',
       typeRecetteId: ceremonie.id,
+      montant: 15000,
       actif: true,
     },
     {
-      libelleBrut: 'ASSURANCE ETUDIANTE',
       codeProduit: 'ASSUR',
-      libelleStandard: 'Assurance etudiante',
+      libelle: 'Assurance etudiante',
       typeRecetteId: assurance.id,
+      montant: 5000,
       actif: true,
     },
-  ] satisfies Prisma.NomenclatureProduitUncheckedCreateInput[];
+  ];
 
   await Promise.all(
     nomenclaturesData.map((nomenclature) =>
       prisma.nomenclatureProduit.upsert({
-        where: { libelleBrut: nomenclature.libelleBrut },
+        where: { codeProduit: nomenclature.codeProduit },
         update: nomenclature,
         create: nomenclature,
       }),
@@ -320,45 +269,83 @@ async function main() {
   const abidjan = requireMapValue(antenneByCode, 'ABJ', 'Antenne');
   const bouake = requireMapValue(antenneByCode, 'BKE', 'Antenne');
 
-  const promo1 = promotions.find((p) => p.nom === 'Première année')!;
-  const promo2 = promotions.find((p) => p.nom === 'Deuxième année')!;
+  const dbNomenclatures = await prisma.nomenclatureProduit.findMany();
+  const scoV1 = dbNomenclatures.find(n => n.codeProduit === 'SCO-L1-PUB-V1');
+  const insL1 = dbNomenclatures.find(n => n.codeProduit === 'INS-L1-PUB');
+  const scoL2 = dbNomenclatures.find(n => n.codeProduit === 'SCO-L2-PUB');
 
-  const etudiantData = [
-    {
+  const nomenclaturesToConnectForKouame = [];
+  if (scoV1) nomenclaturesToConnectForKouame.push({ id: scoV1.id });
+  if (insL1) nomenclaturesToConnectForKouame.push({ id: insL1.id });
+
+  const nomenclaturesToConnectForTraore = [];
+  if (scoL2) nomenclaturesToConnectForTraore.push({ id: scoL2.id });
+
+  await prisma.etudiant.upsert({
+    where: { matricule: '21P-0154ASIB' },
+    update: {
+      nom: 'KOUAME',
+      prenom: 'Affoue Marie',
+      prefixeMatricule: '21P',
+      antenneId: abidjan.id,
+      filiereId: filiereInfas.id,
+      statutId: publicStatut.id,
+      matriculeTresorPay: 'TP-KOUAME-01',
+      promotionId: promo1.id,
+      promotionString: promo1.nom,
+      nomenclatures: {
+        set: nomenclaturesToConnectForKouame
+      }
+    },
+    create: {
       matricule: '21P-0154ASIB',
       nom: 'KOUAME',
       prenom: 'Affoue Marie',
       prefixeMatricule: '21P',
       antenneId: abidjan.id,
-      niveauId: l1.id,
+      filiereId: filiereInfas.id,
       statutId: publicStatut.id,
       matriculeTresorPay: 'TP-KOUAME-01',
       promotionId: promo1.id,
       promotionString: promo1.nom,
+      nomenclatures: {
+        connect: nomenclaturesToConnectForKouame
+      }
+    }
+  });
+
+  await prisma.etudiant.upsert({
+    where: { matricule: '22P-0987BKE' },
+    update: {
+      nom: 'TRAORE',
+      prenom: 'Bakary',
+      prefixeMatricule: '22P',
+      antenneId: bouake.id,
+      filiereId: filiereInfas.id,
+      statutId: publicStatut.id,
+      matriculeTresorPay: 'TP-TRAORE-02',
+      promotionId: promo2.id,
+      promotionString: promo2.nom,
+      nomenclatures: {
+        set: nomenclaturesToConnectForTraore
+      }
     },
-    {
+    create: {
       matricule: '22P-0987BKE',
       nom: 'TRAORE',
       prenom: 'Bakary',
       prefixeMatricule: '22P',
       antenneId: bouake.id,
-      niveauId: l1.id,
+      filiereId: filiereInfas.id,
       statutId: publicStatut.id,
       matriculeTresorPay: 'TP-TRAORE-02',
       promotionId: promo2.id,
       promotionString: promo2.nom,
-    },
-  ] satisfies Prisma.EtudiantUncheckedCreateInput[];
-
-  await Promise.all(
-    etudiantData.map((etudiant) =>
-      prisma.etudiant.upsert({
-        where: { matricule: etudiant.matricule },
-        update: etudiant,
-        create: etudiant,
-      }),
-    ),
-  );
+      nomenclatures: {
+        connect: nomenclaturesToConnectForTraore
+      }
+    }
+  });
 
   console.log('Etudiant-service seeding completed.');
 }

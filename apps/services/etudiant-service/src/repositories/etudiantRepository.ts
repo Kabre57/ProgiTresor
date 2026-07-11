@@ -4,13 +4,10 @@ import { prisma } from '../utils/prisma';
 
 const defaultInclude = {
   antenne: true,
-  niveau: {
-    include: {
-      filiere: true
-    }
-  },
+  filiere: true,
   statut: true,
   promotion: true,
+  nomenclatures: true,
 } satisfies Prisma.EtudiantInclude;
 
 export type EtudiantWithRelations = Prisma.EtudiantGetPayload<{
@@ -107,8 +104,7 @@ export const searchEtudiants = async (
   filiereId?: number | number[],
   statutId?: number | number[],
   promotion?: string | string[],
-  promotionId?: number | number[],
-  niveauId?: number | number[]
+  promotionId?: number | number[]
 ): Promise<EtudiantWithRelations[]> => {
   const end = dbQueryDuration.startTimer({ operation: 'etudiant_search' });
   try {
@@ -130,16 +126,9 @@ export const searchEtudiants = async (
     }
     if (filiereId) {
       if (Array.isArray(filiereId)) {
-        where.niveau = { filiereId: { in: filiereId } };
+        where.filiereId = { in: filiereId };
       } else {
-        where.niveau = { filiereId };
-      }
-    }
-    if (niveauId) {
-      if (Array.isArray(niveauId)) {
-        where.niveauId = { in: niveauId };
-      } else {
-        where.niveauId = niveauId;
+        where.filiereId = filiereId;
       }
     }
     if (statutId) {
@@ -195,7 +184,7 @@ export const countEtudiantsByGroups = async () => {
   const end = dbQueryDuration.startTimer({ operation: 'etudiant_count_by_groups' });
   try {
     return await prisma.etudiant.groupBy({
-      by: ['niveauId', 'statutId'],
+      by: ['promotionId', 'statutId'],
       _count: {
         id: true,
       },

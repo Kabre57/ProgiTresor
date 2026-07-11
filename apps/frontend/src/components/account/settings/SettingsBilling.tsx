@@ -46,17 +46,6 @@ const declarationSchema = z.object({
   libelleProduitBrut: z.string().trim().min(1, 'Le libelle du produit est requis'),
 })
 
-const isApplicableNomenclature = (
-  item: NomenclatureProduit,
-  niveauId: number,
-  filiereId: number | null,
-  statutId: number,
-) => {
-  const niveauMatches = item.niveauId === null || item.niveauId === niveauId
-  const filiereMatches = item.filiereId === null || filiereId === null || item.filiereId === filiereId
-  const statutMatches = item.statutId === null || item.statutId === statutId
-  return item.actif && niveauMatches && filiereMatches && statutMatches
-}
 
 const StudentBillingView = () => {
   const toastNotification = useToast()
@@ -84,11 +73,8 @@ const StudentBillingView = () => {
   )
 
   const applicableNomenclatures = useMemo(() => {
-    if (!etudiant) return []
-    return nomenclatures.filter((item) =>
-      isApplicableNomenclature(item, etudiant.niveauId, etudiant.filiereId, etudiant.statutId),
-    )
-  }, [etudiant, nomenclatures])
+    return etudiant?.nomenclatures ?? [];
+  }, [etudiant])
 
   const totalFees = applicableNomenclatures.reduce((sum, item) => sum + Number(item.montant ?? 0), 0)
   const totalPaid = validatedTransactions.reduce((sum, tx) => sum + Number(tx.montant ?? 0), 0)
@@ -150,7 +136,7 @@ Statut              : ${isPaid ? 'Rapproche avec succes' : 'En attente'}
 INFORMATIONS ETUDIANT
 Matricule interne   : ${etudiant.matricule}
 Nom complet         : ${etudiant.nom} ${etudiant.prenom}
-Filiere / Niveau    : ${etudiant.filiere?.libelle || '-'}
+Filiere / Promotion : ${etudiant.filiere?.libelle || '-'} / ${etudiant.promotion?.niveau ? `${etudiant.promotion.niveau} ${etudiant.promotion.ordre}` : (etudiant.promotion?.nom || etudiant.promotionString || '-')}
 Antenne             : ${etudiant.antenne?.nom || '-'}
 Statut              : ${etudiant.statut?.libelle || '-'}
 
@@ -173,12 +159,12 @@ Document genere depuis le portail etudiant ProgiTresor.
 =====================================================
                 CERTIFICAT DE SCOLARITE
 =====================================================
-Annee academique : ${etudiant.promotion?.nom || etudiant.promotionString || '-'}
+Annee academique : ${etudiant.promotion?.niveau ? `${etudiant.promotion.niveau} ${etudiant.promotion.ordre}` : (etudiant.promotion?.nom || etudiant.promotionString || '-')}
 
 ProgiTresor certifie que l'etudiant :
 Nom complet      : ${etudiant.nom} ${etudiant.prenom}
 Matricule        : ${etudiant.matricule}
-Filiere / Niveau : ${etudiant.filiere?.libelle || '-'}
+Filiere / Promotion : ${etudiant.filiere?.libelle || '-'} / ${etudiant.promotion?.niveau ? `${etudiant.promotion.niveau} ${etudiant.promotion.ordre}` : (etudiant.promotion?.nom || etudiant.promotionString || '-')}
 Statut           : ${etudiant.statut?.libelle || '-'}
 Antenne          : ${etudiant.antenne?.nom || '-'}
 

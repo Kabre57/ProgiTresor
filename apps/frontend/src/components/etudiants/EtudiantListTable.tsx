@@ -31,13 +31,11 @@ const getSortValue = (etudiant: Etudiant, key: string | number) => {
     case 'matricule':
       return etudiant.matricule;
     case 'promotion':
-      return etudiant.promotion?.nom || etudiant.promotionString || '';
+      return etudiant.promotion?.niveau ? `${etudiant.promotion.niveau} ${etudiant.promotion.ordre}` : (etudiant.promotion?.nom || etudiant.promotionString || '');
     case 'antenne':
       return etudiant.antenne?.nom || etudiant.antenneId;
-    case 'niveau':
-      return etudiant.niveau?.libelle || etudiant.niveauId;
     case 'filiere':
-      return etudiant.niveau?.filiere?.libelle || etudiant.niveau?.filiereId || '';
+      return etudiant.filiere?.libelle || etudiant.filiereId || '';
     case 'statut':
       return etudiant.statut?.libelle || etudiant.statutId;
     case 'dateCreation':
@@ -127,7 +125,10 @@ const EtudiantListTable = () => {
       {
         header: 'Promotion',
         accessorKey: 'promotion',
-        cell: (props) => props.row.original.promotion?.nom || props.row.original.promotionString || '-',
+        cell: (props) => {
+          const p = props.row.original.promotion;
+          return p?.niveau ? `${p.niveau} ${p.ordre}` : (p?.nom || props.row.original.promotionString || '-');
+        },
       },
       {
         header: 'Antenne',
@@ -135,14 +136,9 @@ const EtudiantListTable = () => {
         cell: (props) => props.row.original.antenne?.nom || props.row.original.antenneId || '-',
       },
       {
-        header: 'Niveau',
-        accessorKey: 'niveau',
-        cell: (props) => props.row.original.niveau?.libelle || props.row.original.niveauId || '-',
-      },
-      {
         header: 'Filière',
         accessorKey: 'filiere',
-        cell: (props) => props.row.original.niveau?.filiere?.libelle || props.row.original.niveau?.filiereId || '-',
+        cell: (props) => props.row.original.filiere?.libelle || props.row.original.filiereId || '-',
       },
       {
         header: 'Statut',

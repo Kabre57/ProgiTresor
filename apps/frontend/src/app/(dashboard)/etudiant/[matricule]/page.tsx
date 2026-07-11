@@ -49,8 +49,8 @@ const getTransactionDate = (transaction: Transaction) =>
   readValue(transaction, ['dateHeure', 'dateTransaction', 'createdAt']);
 
 const getTransactionProduct = (transaction: Transaction) => {
-  const nomenclature = transaction.nomenclature as { libelleStandard?: string; codeProduit?: string } | undefined;
-  return nomenclature?.libelleStandard || String(readValue(transaction, ['libelleProduitBrut', 'produit']) ?? '-');
+  const nomenclature = transaction.nomenclature as { libelle?: string; codeProduit?: string } | undefined;
+  return nomenclature?.libelle || String(readValue(transaction, ['libelleProduitBrut', 'produit']) ?? '-');
 };
 
 const getOrderCode = (order: PaymentOrder) => String(readValue(order, ['codeOt', 'code', 'reference', 'id']) ?? '-');
@@ -269,7 +269,7 @@ export default function EtudiantDetailsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-y-7 gap-x-4 mt-10">
                 <InfoField label="Matricule" value={etudiant.matricule} />
                 <InfoField label="Trésor Pay" value={etudiant.matriculeTresorPay} />
-                <InfoField label="Promotion" value={etudiant.promotion?.nom || etudiant.promotionString} />
+                <InfoField label="Promotion" value={etudiant.promotion?.niveau ? `${etudiant.promotion.niveau} ${etudiant.promotion.ordre}` : (etudiant.promotion?.nom || etudiant.promotionString)} />
                 <InfoField label="Créé le" value={formatDate(etudiant.dateCreation)} />
               </div>
             </AdaptiveCard>
@@ -286,10 +286,9 @@ export default function EtudiantDetailsPage() {
                 <TabContent value="profil">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <InfoField label="Antenne" value={etudiant.antenne?.nom || etudiant.antenneId} />
-                    <InfoField label="Niveau" value={etudiant.niveau?.libelle || etudiant.niveauId} />
-                    <InfoField label="Filière" value={etudiant.niveau?.filiere?.libelle || etudiant.filiere?.libelle || etudiant.filiereId || '-'} />
+                    <InfoField label="Filière" value={etudiant.filiere?.libelle || etudiant.filiereId || '-'} />
                     <InfoField label="Statut" value={etudiant.statut?.libelle || etudiant.statutId} />
-                    <InfoField label="Promotion" value={etudiant.promotion?.nom || etudiant.promotionString} />
+                    <InfoField label="Promotion" value={etudiant.promotion?.niveau ? `${etudiant.promotion.niveau} ${etudiant.promotion.ordre}` : (etudiant.promotion?.nom || etudiant.promotionString)} />
                     <InfoField label="Matricule Trésor Pay" value={etudiant.matriculeTresorPay} />
                     <InfoField label="Fiche temporaire" value={etudiant.estTemporaire ? 'Oui' : 'Non'} />
                   </div>
@@ -373,10 +372,9 @@ export default function EtudiantDetailsPage() {
               <div className="etudiant-print-grid">
                 <InfoField label="Nom & Prénom" value={`${etudiant.nom} ${etudiant.prenom}`} />
                 <InfoField label="Antenne" value={etudiant.antenne?.nom || etudiant.antenneId} />
-                <InfoField label="Niveau" value={etudiant.niveau?.libelle || etudiant.niveauId} />
-                <InfoField label="Filière" value={etudiant.niveau?.filiere?.libelle || etudiant.filiere?.libelle || etudiant.filiereId || '-'} />
+                <InfoField label="Filière" value={etudiant.filiere?.libelle || etudiant.filiereId || '-'} />
                 <InfoField label="Statut" value={etudiant.statut?.libelle || etudiant.statutId} />
-                <InfoField label="Promotion" value={etudiant.promotion?.nom || etudiant.promotionString} />
+                <InfoField label="Promotion" value={etudiant.promotion?.niveau ? `${etudiant.promotion.niveau} ${etudiant.promotion.ordre}` : (etudiant.promotion?.nom || etudiant.promotionString)} />
                 <InfoField label="Trésor Pay" value={etudiant.matriculeTresorPay} />
                 <InfoField label="Total payé" value={formatCurrency(totalPaid)} />
                 <InfoField label="Transactions" value={printTransactionsQuery.data?.total ?? allTransactions.length} />

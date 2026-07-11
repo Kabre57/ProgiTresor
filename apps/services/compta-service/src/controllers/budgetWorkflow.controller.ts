@@ -5,6 +5,7 @@ import {
   BordereauListQuerySchema,
   ControleOpSchema,
   LotTraitementCreateSchema,
+  LotTraitementListQuerySchema,
   LotTraitementProcessSchema,
   LotTraitementTransmitSchema,
 } from '../../../../../shared/types/compta.types';
@@ -66,6 +67,20 @@ export const listEcritures = async (req: Request, res: Response, next: NextFunct
   }
 };
 
+export const listPendingEcritures = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const query = {
+      antenneId: req.query.antenneId ? Number(req.query.antenneId) : undefined,
+      typeRecetteId: req.query.typeRecetteId ? Number(req.query.typeRecetteId) : undefined,
+      dateDebut: req.query.dateDebut ? String(req.query.dateDebut) : undefined,
+      dateFin: req.query.dateFin ? String(req.query.dateFin) : undefined,
+    };
+    res.json(toJsonSafe(await bordereauService.listPendingEcritures(query)));
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const createLot = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parsed = LotTraitementCreateSchema.safeParse(req.body);
@@ -76,9 +91,11 @@ export const createLot = async (req: Request, res: Response, next: NextFunction)
   }
 };
 
-export const listLots = async (_req: Request, res: Response, next: NextFunction) => {
+export const listLots = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    res.json(toJsonSafe(await lotService.listLots()));
+    const parsed = LotTraitementListQuerySchema.safeParse(req.query);
+    if (!parsed.success) throw new ValidationError(JSON.stringify(parsed.error.format()));
+    res.json(toJsonSafe(await lotService.listLots(parsed.data)));
   } catch (err) {
     next(err);
   }

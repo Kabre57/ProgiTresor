@@ -25,7 +25,6 @@ interface StudentSheetProps {
   
   // Infos Académiques
   filiere: string;
-  cycle: string;
   
   // Résumé Financier
   totalPayments: number;
@@ -47,7 +46,6 @@ const StudentSheet: React.FC<StudentSheetProps> = ({
   promotion,
   statutEtudiant,
   filiere,
-  cycle,
   totalPayments,
   totalAmount,
   status,
@@ -113,8 +111,8 @@ const StudentSheet: React.FC<StudentSheetProps> = ({
             <p className="font-medium">{promotion}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-500 uppercase font-semibold">Filière / Niveau</p>
-            <p className="font-medium">{filiere} ({cycle})</p>
+            <p className="text-sm text-gray-500 uppercase font-semibold">Filière</p>
+            <p className="font-medium">{filiere}</p>
           </div>
           <div>
             <p className="text-sm text-gray-500 uppercase font-semibold">Statut</p>

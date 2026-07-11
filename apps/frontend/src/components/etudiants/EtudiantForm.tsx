@@ -9,6 +9,7 @@ import Button from '@/components/ui/Button';
 import { Form, FormItem } from '@/components/ui/Form';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
+import { MultiSelect } from '@/components/ui/MultiSelect';
 import { usePromotions, useReferential } from '@/lib/hooks/useEtudiantQueries';
 import { TbPhoto, TbTrash } from 'react-icons/tb';
 import { etudiantFormSchema, type Etudiant, type EtudiantFormInput } from '@/types/etudiant.types';
@@ -18,12 +19,12 @@ export const emptyEtudiantFormValues: EtudiantFormInput = {
   nom: '',
   prenom: '',
   antenneId: 0,
-  niveauId: 0,
-  filiereId: null,
+  filiereId: 0,
   statutId: 0,
   matriculeTresorPay: '',
   promotionId: 0,
   photoUrl: '',
+  nomenclatureIds: [],
 };
 
 export const toEtudiantFormValues = (etudiant: Etudiant): EtudiantFormInput => ({
@@ -31,12 +32,12 @@ export const toEtudiantFormValues = (etudiant: Etudiant): EtudiantFormInput => (
   nom: etudiant.nom,
   prenom: etudiant.prenom,
   antenneId: etudiant.antenneId,
-  niveauId: etudiant.niveauId,
-  filiereId: (etudiant.filiereId ?? etudiant.niveau?.filiereId) ?? null,
+  filiereId: etudiant.filiereId ?? 0,
   statutId: etudiant.statutId,
   matriculeTresorPay: etudiant.matriculeTresorPay ?? '',
   promotionId: etudiant.promotionId ?? 0,
   photoUrl: etudiant.photoUrl ?? '',
+  nomenclatureIds: etudiant.nomenclatures?.map(n => n.id) ?? [],
 });
 
 type EtudiantFormProps = {
@@ -52,10 +53,10 @@ const getInitials = (nom?: string, prenom?: string) =>
 const EtudiantForm = ({ defaultValues, formId, matriculeLocked = false, onFormSubmit }: EtudiantFormProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const antennesQuery = useReferential('antennes');
-  const niveauxQuery = useReferential('niveaux');
   const filieresQuery = useReferential('filieres');
   const statutsQuery = useReferential('statuts-etudiants');
   const promotionsQuery = usePromotions();
+  const nomenclaturesQuery = useReferential('nomenclatures');
 
   const {
     control,
@@ -82,10 +83,6 @@ const EtudiantForm = ({ defaultValues, formId, matriculeLocked = false, onFormSu
     label: `${item.code} - ${item.nom}`,
     value: item.id,
   }));
-  const niveauOptions = (niveauxQuery.data ?? []).map((item) => ({
-    label: `${item.code} - ${item.libelle}`,
-    value: item.id,
-  }));
   const filiereOptions = (filieresQuery.data ?? []).map((item) => ({
     label: `${item.code} - ${item.libelle}`,
     value: item.id,
@@ -95,7 +92,7 @@ const EtudiantForm = ({ defaultValues, formId, matriculeLocked = false, onFormSu
     value: item.id,
   }));
   const promotionOptions = (promotionsQuery.data ?? []).map((item) => ({
-    label: item.nom,
+    label: item.niveau ? `${item.niveau} ${item.ordre}` : item.nom,
     value: item.id,
   }));
 
@@ -170,22 +167,6 @@ const EtudiantForm = ({ defaultValues, formId, matriculeLocked = false, onFormSu
                 )}
               />
             </FormItem>
-            <FormItem label="Niveau" invalid={Boolean(errors.niveauId)} errorMessage={errors.niveauId?.message}>
-              <Controller
-                name="niveauId"
-                control={control}
-                render={({ field }) => (
-                  <Select
-                    instanceId="etudiant-form-niveau"
-                    placeholder="Choisir un niveau"
-                    options={niveauOptions}
-                    value={field.value}
-                    onChange={(event) => field.onChange(event.target.value ? Number(event.target.value) : 0)}
-                    searchable
-                  />
-                )}
-              />
-            </FormItem>
             <FormItem label="Filière" invalid={Boolean(errors.filiereId)} errorMessage={errors.filiereId?.message}>
               <Controller
                 name="filiereId"
@@ -193,15 +174,12 @@ const EtudiantForm = ({ defaultValues, formId, matriculeLocked = false, onFormSu
                 render={({ field }) => (
                   <Select
                     instanceId="etudiant-form-filiere"
-                    placeholder="Choisir une filière (Optionnel)"
-                    options={[
-                      { label: 'Aucune filière', value: 0 },
-                      ...filiereOptions
-                    ]}
-                    value={field.value ?? 0}
+                    placeholder="Choisir une filière"
+                    options={filiereOptions}
+                    value={field.value}
                     onChange={(event) => {
                       const val = event.target.value ? Number(event.target.value) : 0;
-                      field.onChange(val > 0 ? val : null);
+                      field.onChange(val);
                     }}
                     searchable
                   />
@@ -220,6 +198,23 @@ const EtudiantForm = ({ defaultValues, formId, matriculeLocked = false, onFormSu
                     value={field.value}
                     onChange={(event) => field.onChange(event.target.value ? Number(event.target.value) : 0)}
                     searchable
+                  />
+                )}
+              />
+            </FormItem>
+            <FormItem label="Frais associés (Nomenclatures)" invalid={Boolean(errors.nomenclatureIds)} errorMessage={errors.nomenclatureIds?.message}>
+              <Controller
+                name="nomenclatureIds"
+                control={control}
+                render={({ field }) => (
+                  <MultiSelect
+                    placeholder="Sélectionner les frais"
+                    options={(nomenclaturesQuery.data ?? []).map((item) => ({
+                      label: `${item.libelle} (${item.montant} FCFA)`,
+                      value: item.id,
+                    }))}
+                    value={field.value ?? []}
+                    onChange={field.onChange}
                   />
                 )}
               />

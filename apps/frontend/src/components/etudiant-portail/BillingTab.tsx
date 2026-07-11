@@ -98,7 +98,7 @@ export function BillingTab({
                     {applicableNomenclatures.map((item) => (
                       <tr key={item.id}>
                         <td className="px-6 py-4 font-medium text-gray-900 dark:text-gray-50">{item.codeProduit}</td>
-                        <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{item.libelleStandard}</td>
+                        <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{item.libelle}</td>
                         <td className="px-6 py-4 text-right font-semibold text-gray-900 dark:text-gray-50">
                           {formatCurrency(item.montant)}
                         </td>

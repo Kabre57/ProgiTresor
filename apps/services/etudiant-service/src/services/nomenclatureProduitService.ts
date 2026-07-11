@@ -1,7 +1,5 @@
 import * as repo from '../repositories/nomenclatureProduitRepository';
 import * as typeRecetteRepo from '../repositories/typeRecetteRepository';
-import * as niveauRepo from '../repositories/niveauRepository';
-import * as statutRepo from '../repositories/statutEtudiantRepository';
 import { ConflictError, NotFoundError, AppError } from '../utils/errors';
 import logger from '../utils/logger';
 import type { NomenclatureProduitCreateInput, NomenclatureProduitUpdateInput } from '../../../../../shared/types/etudiant.types';
@@ -17,18 +15,10 @@ export const getById = async (id: number) => {
   return item;
 };
 
-const validateForeignKeys = async (data: { typeRecetteId?: number; niveauId?: number | null; statutId?: number | null }) => {
+const validateForeignKeys = async (data: { typeRecetteId?: number }) => {
   if (data.typeRecetteId) {
     const tr = await typeRecetteRepo.findById(data.typeRecetteId);
     if (!tr) throw new AppError(400, `TypeRecette with id ${data.typeRecetteId} does not exist`);
-  }
-  if (data.niveauId) {
-    const niveau = await niveauRepo.findById(data.niveauId);
-    if (!niveau) throw new AppError(400, `Niveau with id ${data.niveauId} does not exist`);
-  }
-  if (data.statutId) {
-    const stat = await statutRepo.findById(data.statutId);
-    if (!stat) throw new AppError(400, `StatutEtudiant with id ${data.statutId} does not exist`);
   }
 };
 

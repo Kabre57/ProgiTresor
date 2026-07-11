@@ -8,6 +8,7 @@ import type {
   LigneBudgetairePayload,
   LotTraitement,
   LotTraitementCreatePayload,
+  LotTraitementListParams,
   LotTraitementProcessPayload,
   OrdrePaiement,
   PaginatedResult,
@@ -43,13 +44,23 @@ export const comptaWorkflowApi = {
     return response.data;
   },
 
-  listLots: async () => {
-    const response = await apiClient.get<LotTraitement[]>('/compta/lots');
+  listLots: async (params?: LotTraitementListParams) => {
+    const response = await apiClient.get<PaginatedResult<LotTraitement>>('/compta/lots', { params });
     return response.data;
   },
 
-  createLot: async (payload: LotTraitementCreatePayload) => {
+  createLot: async (payload: LotTraitementCreatePayload & { ecritureIds?: number[]; remarques?: string }) => {
     const response = await apiClient.post<LotTraitement>('/compta/lots', payload);
+    return response.data;
+  },
+
+  listPendingEcritures: async (params?: {
+    antenneId?: number;
+    typeRecetteId?: number;
+    dateDebut?: string;
+    dateFin?: string;
+  }) => {
+    const response = await apiClient.get<any[]>('/compta/ecritures/pending', { params });
     return response.data;
   },
 

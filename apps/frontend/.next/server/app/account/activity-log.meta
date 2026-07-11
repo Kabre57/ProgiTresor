@@ -1,0 +1,17 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/(dashboard)/layout,_N_T_/(dashboard)/account/layout,_N_T_/(dashboard)/account/activity-log/layout,_N_T_/(dashboard)/account/activity-log/page,_N_T_/account/activity-log"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/!KGRhc2hib2FyZCk/account/activity-log/__PAGE__",
+    "/!KGRhc2hib2FyZCk/account/activity-log",
+    "/!KGRhc2hib2FyZCk/account",
+    "/!KGRhc2hib2FyZCk",
+    "/_index",
+    "/_head"
+  ]
+}

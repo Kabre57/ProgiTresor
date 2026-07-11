@@ -1,0 +1,3 @@
+module.exports=[12804,a=>{"use strict";var b=a.i(86531),c=a.i(810);function d(){return(0,b.jsx)(c.ReferentialPage,{endpoint:"filieres",title:"Filières",description:"Filières de formation pour les étudiants.",fields:[{name:"code",label:"Code",required:!0},{name:"libelle",label:"Libellé",required:!0},{name:"abreviation",label:"Abréviation",required:!0}],columns:[{key:"code",header:"Code",render:a=>a.code},{key:"libelle",header:"Libellé",render:a=>a.libelle},{key:"abreviation",header:"Abréviation",render:a=>a.abreviation}]})}a.s(["default",()=>d])}];
+
+//# sourceMappingURL=apps_frontend_src_app_%28dashboard%29_admin_filieres_page_tsx_f2114e38._.js.map

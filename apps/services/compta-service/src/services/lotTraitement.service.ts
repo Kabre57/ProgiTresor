@@ -1,12 +1,14 @@
 import { Prisma } from '@prisma/client/index';
 import {
   LotTraitementCreateInput,
+  LotTraitementListQueryInput,
   LotTraitementProcessInput,
   LotTraitementTransmitInput,
 } from '../../../../../shared/types/compta.types';
 import { prisma } from '../utils/prisma';
 import { BUDGET_SERVICE_URL, http } from '../utils/httpClient';
 import { AppError } from '../utils/errors';
+import { parseSafeDate } from '../utils/date';
 
 type BudgetOpResponse = {
   id: string;
@@ -38,49 +40,121 @@ const buildEcritureWhere = (input: LotTraitementCreateInput): Prisma.EcritureBud
   return where;
 };
 
-export const createLot = async (input: LotTraitementCreateInput) => {
-  const ecritures = await prisma.ecritureBudgetaire.findMany({
-    where: buildEcritureWhere(input),
-    select: { id: true, montant: true },
-  });
+export const createLot = async (input: LotTraitementCreateInput & { ecritureIds?: number[]; remarques?: string }) => {
+  let ecritures: { id: number; bordereauId: number; montant: any }[] = [];
+
+  if (input.ecritureIds && input.ecritureIds.length > 0) {
+    ecritures = await prisma.ecritureBudgetaire.findMany({
+      where: {
+        id: { in: input.ecritureIds },
+        statut: 'EN_ATTENTE',
+      },
+      select: { id: true, bordereauId: true, montant: true },
+    });
+  } else {
+    if (!input.bordereauId) {
+      throw new AppError(400, "Le bordereauId est requis si aucune écriture n'est spécifiée.");
+    }
+    const raw = await prisma.ecritureBudgetaire.findMany({
+      where: buildEcritureWhere(input),
+      select: { id: true, bordereauId: true, montant: true },
+      take: input.limit ?? undefined,
+    });
+    ecritures = raw;
+  }
+
   if (ecritures.length === 0) {
     throw new AppError(400, 'Aucune écriture disponible pour ce lot de traitement.');
   }
 
+  const firstBordereauId = input.bordereauId ?? ecritures[0].bordereauId;
   const montantTotal = ecritures.reduce((sum, item) => sum + Number(item.montant), 0);
+
   return prisma.$transaction(async (tx) => {
     const lot = await tx.lotTraitement.create({
       data: {
-        bordereauId: input.bordereauId,
-        reference: input.reference ?? buildLotReference(input.bordereauId),
+        bordereauId: firstBordereauId,
+        reference: input.reference ?? buildLotReference(firstBordereauId),
         dateDebutFlux: input.dateDebutFlux ? new Date(input.dateDebutFlux) : null,
         dateFinFlux: input.dateFinFlux ? new Date(input.dateFinFlux) : null,
         typeRecetteId: input.typeRecetteId,
         antenneId: input.antenneId,
         montantTotal: new Prisma.Decimal(montantTotal),
         nombreEcritures: ecritures.length,
+        remarques: input.remarques ?? null,
       },
     });
 
-    await tx.lotTraitementEcriture.createMany({
-      data: ecritures.map((ecriture) => ({
-        lotTraitementId: lot.id,
-        ecritureBudgetaireId: ecriture.id,
-      })),
-    });
+    const lotEcritureData = ecritures.map((ecriture) => ({
+      lotTraitementId: lot.id,
+      ecritureBudgetaireId: ecriture.id,
+    }));
+
+    const chunkSize = 10000;
+    for (let i = 0; i < lotEcritureData.length; i += chunkSize) {
+      const chunk = lotEcritureData.slice(i, i + chunkSize);
+      await tx.lotTraitementEcriture.createMany({
+        data: chunk,
+      });
+    }
 
     return tx.lotTraitement.findUniqueOrThrow({
       where: { id: lot.id },
       include: { ecritures: { include: { ecritureBudgetaire: true } } },
     });
+  }, {
+    timeout: 300000
   });
 };
 
-export const listLots = async () => {
-  return prisma.lotTraitement.findMany({
-    orderBy: { dateCreation: 'desc' },
-    include: { bordereau: true },
-  });
+const buildLotWhere = (query: LotTraitementListQueryInput): Prisma.LotTraitementWhereInput => {
+  const where: Prisma.LotTraitementWhereInput = {};
+  if (query.statut) where.statut = query.statut;
+  
+  const dateDebut = parseSafeDate(query.dateDebut);
+  const dateFin = parseSafeDate(query.dateFin);
+  if (dateDebut || dateFin) {
+    where.dateCreation = {};
+    if (dateDebut) where.dateCreation.gte = dateDebut;
+    if (dateFin) where.dateCreation.lte = dateFin;
+  }
+
+  if (query.montantMin !== undefined || query.montantMax !== undefined) {
+    where.montantTotal = {};
+    if (query.montantMin !== undefined) where.montantTotal.gte = new Prisma.Decimal(query.montantMin);
+    if (query.montantMax !== undefined) where.montantTotal.lte = new Prisma.Decimal(query.montantMax);
+  }
+  if (query.utilisateur) {
+    where.bordereau = { utilisateurTransmission: { contains: query.utilisateur, mode: 'insensitive' } };
+  }
+  if (query.codeOt) {
+    where.ecritures = { some: { ecritureBudgetaire: { codeOt: { contains: query.codeOt, mode: 'insensitive' } } } };
+  }
+  const text = query.search || query.titre;
+  if (text) {
+    where.OR = [
+      { reference: { contains: text, mode: 'insensitive' } },
+      { bordereau: { reference: { contains: text, mode: 'insensitive' } } },
+      { ecritures: { some: { ecritureBudgetaire: { codeOt: { contains: text, mode: 'insensitive' } } } } },
+    ];
+  }
+  return where;
+};
+
+export const listLots = async (query: LotTraitementListQueryInput) => {
+  const where = buildLotWhere(query);
+  const skip = (query.page - 1) * query.limit;
+  const [items, total] = await Promise.all([
+    prisma.lotTraitement.findMany({
+      where,
+      orderBy: { [query.sortBy]: query.sortOrder },
+      include: { bordereau: true },
+      skip,
+      take: query.limit,
+    }),
+    prisma.lotTraitement.count({ where }),
+  ]);
+  return { items, total, page: query.page, limit: query.limit };
 };
 
 export const getLot = async (id: number) => {
@@ -103,15 +177,22 @@ export const traiterLot = async (id: number, input: LotTraitementProcessInput) =
 
   return prisma.$transaction(async (tx) => {
     const ecritureIds = lot.ecritures.map((link) => link.ecritureBudgetaireId);
-    await tx.imputationBudgetaire.createMany({
-      data: lot.ecritures.map((link) => ({
-        ecritureBudgetaireId: link.ecritureBudgetaireId,
-        ligneBudgetaireId: input.ligneBudgetaireId,
-        montantImpute: link.ecritureBudgetaire.montant,
-        utilisateurImputation: input.utilisateurTraitement,
-        remarques: input.remarques,
-      })),
-    });
+    
+    const imputationData = lot.ecritures.map((link) => ({
+      ecritureBudgetaireId: link.ecritureBudgetaireId,
+      ligneBudgetaireId: input.ligneBudgetaireId,
+      montantImpute: link.ecritureBudgetaire.montant,
+      utilisateurImputation: input.utilisateurTraitement,
+      remarques: input.remarques,
+    }));
+
+    const chunkSize = 10000;
+    for (let i = 0; i < imputationData.length; i += chunkSize) {
+      const chunk = imputationData.slice(i, i + chunkSize);
+      await tx.imputationBudgetaire.createMany({
+        data: chunk,
+      });
+    }
 
     await tx.ecritureBudgetaire.updateMany({
       where: { id: { in: ecritureIds } },
@@ -133,6 +214,8 @@ export const traiterLot = async (id: number, input: LotTraitementProcessInput) =
       data: { statut: 'TRAITE', dateTraitement: new Date() },
       include: { ecritures: { include: { ecritureBudgetaire: true } }, bordereau: true },
     });
+  }, {
+    timeout: 300000
   });
 };
 

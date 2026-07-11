@@ -35,10 +35,6 @@ export const remove = async (id: number): Promise<StatutEtudiant> => {
 export const countDependencies = async (id: number): Promise<number> => {
   const end = dbQueryDuration.startTimer({ operation: 'statut_count_deps' });
   try {
-    const [etudiant, nomenclatures] = await Promise.all([
-      prisma.etudiant.count({ where: { statutId: id } }),
-      prisma.nomenclatureProduit.count({ where: { statutId: id } }),
-    ]);
-    return etudiant + nomenclatures;
+    return await prisma.etudiant.count({ where: { statutId: id } });
   } finally { end(); }
 };

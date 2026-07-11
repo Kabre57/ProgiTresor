@@ -20,6 +20,7 @@ import {
   listBordereaux,
   listControles,
   listEcritures,
+  listPendingEcritures,
   listLignesBudgetaires,
   listLots,
   traiterLot,
@@ -71,6 +72,7 @@ app.post('/bordereaux/from-ots', createBordereauFromOts);
 app.get('/bordereaux', authorizePerimeter('BUDGET', 1, 'READ_BORDEREAU'), listBordereaux);
 app.get('/bordereaux/:id', authorizePerimeter('BUDGET', 1, 'READ_BORDEREAU'), getBordereau);
 app.get('/bordereaux/:id/ecritures', authorizePerimeter('BUDGET', 1, 'READ_ECRITURES'), listEcritures);
+app.get('/ecritures/pending', authorizePerimeter('BUDGET', 1, 'READ_ECRITURES'), listPendingEcritures);
 
 app.get('/lignes-budgetaires', authorizePerimeter('BUDGET', 1, 'READ_LIGNE'), listLignesBudgetaires);
 app.post('/lignes-budgetaires', authorizePerimeter('BUDGET', 2, 'UPSERT_LIGNE'), upsertLigneBudgetaire);

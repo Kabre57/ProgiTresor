@@ -197,14 +197,14 @@ export const generateSynthesisPDF = async (
     y += blockHeight + 20;
 
     // Section 1 label
-    doc.fontSize(10).fillColor('#1E293B').font('Helvetica-Bold').text('1. Agrégation par antenne, niveau et type de recette', startX, y);
+    doc.fontSize(10).fillColor('#1E293B').font('Helvetica-Bold').text('1. Agrégation par antenne, filière et type de recette', startX, y);
     y += 18;
 
     // Table Column Definitions
     const columns = [
       { label: 'CODE OT', width: 90, align: 'left' as const },
       { label: 'ANTENNE (INFAS)', width: 80, align: 'left' as const },
-      { label: 'NIVEAU ÉTUDIANT', width: 80, align: 'left' as const },
+      { label: 'FILIÈRE', width: 80, align: 'left' as const },
       { label: 'TYPE DE RECETTE (FLUX)', width: 110, align: 'left' as const },
       { label: 'MONTANT CUMULÉ (XOF)', width: 95, align: 'right' as const },
       { label: 'NBR TRANSACTIONS', width: 76, align: 'right' as const },
@@ -236,7 +236,7 @@ export const generateSynthesisPDF = async (
       const cells = [
         line.codeOt,
         line.antenneLibelle,
-        line.niveauLibelle,
+        line.filiereLibelle,
         line.typeRecetteLibelle,
         formatMoney(line.montantCumule),
         String(line.nombreFlux),

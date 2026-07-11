@@ -39,7 +39,7 @@ type Antenne = {
   nom?: string;
 };
 
-type Niveau = {
+type Filiere = {
   id: number;
   code?: string;
   libelle?: string;
@@ -54,15 +54,16 @@ type StatutEtudiant = {
 type Etudiant = {
   id: number;
   antenneId: number;
-  niveauId: number;
+  filiereId: number;
   statutId: number;
 };
 
 type Nomenclature = {
   id: number;
-  libelleBrut?: string;
+  libelle?: string;
   libelleStandard?: string;
   niveauId?: number | null;
+  filiereId?: number | null;
   typeRecetteId?: number;
   typeRecette?: {
     id: number;
@@ -77,7 +78,7 @@ export type SynthesisFilters = {
   dateDebut?: string;
   dateFin?: string;
   antenneId?: number;
-  niveauId?: number;
+  filiereId?: number;
   typeRecetteId?: number;
 };
 
@@ -86,9 +87,9 @@ export type SynthesisLine = {
   antenneId: number;
   antenneCode: string;
   antenneLibelle: string;
-  niveauId: number;
-  niveauCode: string;
-  niveauLibelle: string;
+  filiereId: number;
+  filiereCode: string;
+  filiereLibelle: string;
   statutId: number;
   statutLibelle: string;
   typeRecetteId: number;
@@ -136,9 +137,9 @@ const buildMaps = async (transactions: RawTransaction[]) => {
     new Set(transactions.map((tx) => tx.etudiantId).filter((id): id is number => id !== null)),
   );
 
-  const [antennes, niveaux, nomenclatures, statuts] = await Promise.all([
+  const [antennes, filieres, nomenclatures, statuts] = await Promise.all([
     fetchArray<Antenne>(`${ETUDIANT_SERVICE_URL}/antennes`),
-    fetchArray<Niveau>(`${ETUDIANT_SERVICE_URL}/niveaux`),
+    fetchArray<Filiere>(`${ETUDIANT_SERVICE_URL}/filieres`),
     fetchArray<Nomenclature>(`${ETUDIANT_SERVICE_URL}/nomenclatures`),
     fetchArray<StatutEtudiant>(`${ETUDIANT_SERVICE_URL}/statuts-etudiants`),
   ]);
@@ -160,7 +161,7 @@ const buildMaps = async (transactions: RawTransaction[]) => {
 
   return {
     antennes: new Map(antennes.map((item) => [item.id, item])),
-    niveaux: new Map(niveaux.map((item) => [item.id, item])),
+    filieres: new Map(filieres.map((item) => [item.id, item])),
     nomenclatures: new Map(nomenclatures.map((item) => [item.id, item])),
     etudiants: new Map(etudiants.map((item) => [item.id, item])),
     statuts: new Map(statuts.map((item) => [item.id, item])),
@@ -217,13 +218,9 @@ export const aggregateSynthesis = async (filters: SynthesisFilters = {}): Promis
 
   const nomByLibelleMap = new Map<string, Nomenclature>();
   for (const nom of maps.nomenclatures.values()) {
-    if (nom.libelleBrut) {
-      nomByLibelleMap.set(nom.libelleBrut.trim().toUpperCase(), nom);
-      nomByLibelleMap.set(normalizeAndSortWords(nom.libelleBrut), nom);
-    }
-    if (nom.libelleStandard) {
-      nomByLibelleMap.set(nom.libelleStandard.trim().toUpperCase(), nom);
-      nomByLibelleMap.set(normalizeAndSortWords(nom.libelleStandard), nom);
+    if (nom.libelle) {
+      nomByLibelleMap.set(nom.libelle.trim().toUpperCase(), nom);
+      nomByLibelleMap.set(normalizeAndSortWords(nom.libelle), nom);
     }
   }
 
@@ -236,18 +233,18 @@ export const aggregateSynthesis = async (filters: SynthesisFilters = {}): Promis
     }
 
     const antenneId = tx.antenneId ?? etudiant?.antenneId ?? 1;
-    const niveauId = etudiant?.niveauId ?? nomenclature?.niveauId ?? 1;
+    const filiereId = etudiant?.filiereId ?? nomenclature?.filiereId ?? nomenclature?.niveauId ?? 1;
     const statutId = etudiant?.statutId ?? 1; // 1 = Public par défaut
     const typeRecetteId = nomenclature?.typeRecetteId ?? nomenclature?.typeRecette?.id ?? tx.typeFluxId ?? 1;
 
     if (filters.antenneId && antenneId !== filters.antenneId) continue;
-    if (filters.niveauId && niveauId !== filters.niveauId) continue;
+    if (filters.filiereId && filiereId !== filters.filiereId) continue;
     if (filters.typeRecetteId && typeRecetteId !== filters.typeRecetteId) continue;
 
     const antenne = maps.antennes.get(antenneId);
-    const niveau = maps.niveaux.get(niveauId);
+    const filiere = maps.filieres.get(filiereId);
     const statut = maps.statuts.get(statutId);
-    const key = `${antenneId}:${niveauId}:${statutId}:${typeRecetteId}`;
+    const key = `${antenneId}:${filiereId}:${statutId}:${typeRecetteId}`;
 
     if (!groups.has(key)) {
       const nextSeq = (antennaSequence.get(antenneId) ?? 0) + 1;
@@ -259,9 +256,9 @@ export const aggregateSynthesis = async (filters: SynthesisFilters = {}): Promis
         antenneId,
         antenneCode,
         antenneLibelle: antenne?.nom ?? antenneCode,
-        niveauId,
-        niveauCode: niveau?.code ?? `NIV${niveauId}`,
-        niveauLibelle: niveau?.libelle ?? `Niveau ${niveauId}`,
+        filiereId,
+        filiereCode: filiere?.code ?? `FIL${filiereId}`,
+        filiereLibelle: filiere?.libelle ?? `Filière ${filiereId}`,
         statutId,
         statutLibelle: statut?.libelle ?? (statutId === 1 ? 'Public' : 'Privé'),
         typeRecetteId,
@@ -284,7 +281,7 @@ export const aggregateSynthesis = async (filters: SynthesisFilters = {}): Promis
 
   return Array.from(groups.values()).sort((a, b) =>
     a.antenneCode.localeCompare(b.antenneCode) ||
-    a.niveauCode.localeCompare(b.niveauCode) ||
+    a.filiereCode.localeCompare(b.filiereCode) ||
     a.statutLibelle.localeCompare(b.statutLibelle) ||
     a.typeRecetteLibelle.localeCompare(b.typeRecetteLibelle),
   );

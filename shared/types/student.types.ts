@@ -125,9 +125,8 @@ export const TypeRecetteUpdateSchema = TypeRecetteCreateSchema.partial();
 
 // --- NomenclatureProduit ---
 export const NomenclatureProduitCreateSchema = z.preprocess(normalizeFilierePayload, z.object({
-  libelleBrut: z.string().trim().min(1, 'Libellé brut is required').max(200),
   codeProduit: z.string().trim().min(1, 'Code produit is required').max(40),
-  libelleStandard: z.string().trim().min(1, 'Libellé standard is required').max(150),
+  libelle: z.string().trim().min(1, 'Libellé is required').max(150),
   typeRecetteId: z.number().int().positive('typeRecetteId must be positive'),
   filiereId: z.number().int().positive().optional().nullable(),
   statutId: z.number().int().positive().optional().nullable(),
@@ -139,9 +138,8 @@ export const NomenclatureProduitCreateSchema = z.preprocess(normalizeFilierePayl
 export const NomenclatureProduitUpdateSchema = z.preprocess(
   normalizeFilierePayload,
   z.object({
-    libelleBrut: z.string().trim().min(1, 'Libellé brut is required').max(200).optional(),
     codeProduit: z.string().trim().min(1, 'Code produit is required').max(40).optional(),
-    libelleStandard: z.string().trim().min(1, 'Libellé standard is required').max(150).optional(),
+    libelle: z.string().trim().min(1, 'Libellé is required').max(150).optional(),
     typeRecetteId: z.number().int().positive('typeRecetteId must be positive').optional(),
     filiereId: z.number().int().positive().optional().nullable(),
     statutId: z.number().int().positive().optional().nullable(),

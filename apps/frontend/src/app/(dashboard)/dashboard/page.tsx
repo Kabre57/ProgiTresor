@@ -169,7 +169,7 @@ export default function DashboardPage() {
     const data = recettesQuery.data ?? [];
     const sorted = [...data].sort((a, b) => b.montantTotal - a.montantTotal).slice(0, 5);
 
-    const categories = sorted.map((item) => item.libelleStandard || 'Autre');
+    const categories = sorted.map((item) => item.libelle || 'Autre');
     const series = [
       {
         name: 'Montant (FCFA)',

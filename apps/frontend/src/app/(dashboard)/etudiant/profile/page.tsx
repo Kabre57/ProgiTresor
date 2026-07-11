@@ -45,10 +45,9 @@ export default function EtudiantProfilePage() {
         matricule={etudiant.matricule}
         photoUrl={etudiant.photoUrl ?? undefined}
         antenne={etudiant.antenne?.nom || '-'}
-        promotion={etudiant.promotion?.nom || etudiant.promotionString || '-'}
+        promotion={etudiant.promotion?.niveau ? `${etudiant.promotion.niveau} ${etudiant.promotion.ordre}` : (etudiant.promotion?.nom || etudiant.promotionString || '-')}
         statutEtudiant={etudiant.statut?.libelle || '-'}
         filiere={etudiant.filiere?.libelle || etudiant.niveau?.filiere?.libelle || etudiant.niveau?.libelle || '-'}
-        cycle={etudiant.niveau?.cycle || etudiant.niveau?.libelle || '-'}
         totalPayments={totalPaid}
         totalAmount={formatCurrency(totalPaid)}
         status={restToPay === 0 && totalFees > 0 ? 'À JOUR' : 'SOLDE IMPAYÉ'}
@@ -61,7 +60,7 @@ export default function EtudiantProfilePage() {
           dateHeure: formatDate(getTransactionDate(tx)),
         }))}
         pricingReferences={applicableNomenclatures.map((item) => ({
-          type: item.libelleStandard,
+          type: item.libelle,
           year1: formatCurrency(item.montant),
           year2: '-',
           year3: '-',

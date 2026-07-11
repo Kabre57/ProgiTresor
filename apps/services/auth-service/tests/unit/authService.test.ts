@@ -12,7 +12,15 @@ jest.mock('../../src/utils/prisma', () => ({
       create: jest.fn().mockResolvedValue({}),
       findUnique: jest.fn(),
       update: jest.fn(),
-    }
+    },
+    utilisateur: {
+      findUnique: jest.fn().mockResolvedValue({
+        id: 1,
+        perimeterLevels: [],
+        exclusions: [],
+        tokenVersion: 1
+      }),
+    },
   },
 }));
 jest.mock('../../src/utils/logger', () => ({

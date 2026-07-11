@@ -5,6 +5,7 @@ import { ValidationError, AppError } from '../utils/errors';
 import { prisma } from '../utils/prisma';
 import logger from '../utils/logger';
 import { toJsonSafe } from '../../../../../shared/utils/json';
+import { CreateOrdersFromSynthesisSchema } from '../../../../../shared/types/order.types';
 
 // ============================================================
 // Middleware de validation Zod
@@ -59,7 +60,11 @@ export const generateOrders = async (req: Request, res: Response, next: NextFunc
 
 export const createFromSynthesis = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const result = await orderService.createOrdersFromSynthesis(req.body);
+    const parsed = CreateOrdersFromSynthesisSchema.safeParse(req.body);
+    if (!parsed.success) {
+      throw new ValidationError(JSON.stringify(parsed.error.format()));
+    }
+    const result = await orderService.createOrdersFromSynthesis(parsed.data);
     res.status(201).json(toJsonSafe(result));
   } catch (e) {
     next(e);

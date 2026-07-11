@@ -37,8 +37,8 @@ describe('EtudiantService', () => {
     prefixeMatricule: 'ETU',
     antenneId: 1,
     antenne: { id: 1, code: 'ABJ', nom: 'INFAS ABIDJAN', ville: 'Abidjan', actif: true },
-    filiereId: 1,
-    filiere: { id: 1, code: 'L1', libelle: 'Licence 1', cycle: 'Licence', anneeEtude: 1 },
+    niveauId: 1,
+    niveau: { id: 1, code: 'L1', libelle: 'Licence 1 (L1)', anneeEtude: 1, filiereId: 1, filiere: { id: 1, code: 'INF', libelle: 'Informatique' } },
     statutId: 1,
     statut: { id: 1, code: 'PUBLIC', libelle: 'Etudiant Public' },
     dateCreation: new Date(),
@@ -89,7 +89,7 @@ describe('EtudiantService', () => {
         nom: 'KOUASSI',
         prenom: 'Jean-Pierre',
         antenneId: 1,
-        filiereId: 1,
+        niveauId: 1,
         statutId: 1,
       });
 
@@ -106,7 +106,7 @@ describe('EtudiantService', () => {
         nom: 'KOUASSI',
         prenom: 'Jean-Pierre',
         antenneId: 1,
-        filiereId: 1,
+        niveauId: 1,
         statutId: 1,
       })).rejects.toThrow(ConflictError);
     });

@@ -1,4 +1,7 @@
 process.env.DATABASE_URL = 'postgresql://mock:mock@localhost:5432/mock';
+// Set a test secret so validateInternalSecret middleware passes for internal calls
+process.env.INTERNAL_API_SECRET = 'test-internal-secret-for-jest';
+
 import request from 'supertest';
 import app from '../../src/app';
 import * as orderRepository from '../../src/repositories/orderRepository';
@@ -30,6 +33,11 @@ jest.mock('../../src/utils/httpClient', () => ({
   ETUDIANT_SERVICE_URL: 'http://mock-etudiant:5002',
 }));
 
+/** Helper: header required by validateInternalSecret for calls coming through the Gateway */
+const INTERNAL_HEADERS = {
+  'x-internal-secret': 'test-internal-secret-for-jest',
+};
+
 describe('Order API Integration Tests', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -49,7 +57,10 @@ describe('Order API Integration Tests', () => {
 
   describe('GET /metrics', () => {
     it('should return 200 and prometheus metrics', async () => {
-      const response = await request(app).get('/metrics');
+      // validateInternalSecret requires the Gateway secret header
+      const response = await request(app)
+        .get('/metrics')
+        .set(INTERNAL_HEADERS);
       expect(response.status).toBe(200);
       expect(response.text).toContain('order_');
     });
@@ -63,7 +74,10 @@ describe('Order API Integration Tests', () => {
       ];
       (orderRepository.findAllOts as jest.Mock).mockResolvedValue(mockOrders);
 
-      const response = await request(app).get('/');
+      // validateInternalSecret requires the Gateway secret header
+      const response = await request(app)
+        .get('/')
+        .set(INTERNAL_HEADERS);
       expect(response.status).toBe(200);
       expect(response.body).toHaveLength(2);
     });
@@ -71,8 +85,10 @@ describe('Order API Integration Tests', () => {
 
   describe('PUT /:code/status validation', () => {
     it('should return 400 if statut is invalid', async () => {
+      // validateInternalSecret requires the Gateway secret header; we then test the business validation (400)
       const response = await request(app)
         .put('/OT-001/status')
+        .set(INTERNAL_HEADERS)
         .send({ statut: 'InvalidStatus' });
 
       expect(response.status).toBe(400);
@@ -81,14 +97,16 @@ describe('Order API Integration Tests', () => {
 
   describe('POST /generate authorization', () => {
     it('should return 403 if no role header', async () => {
-      const response = await request(app).post('/generate');
+      const response = await request(app)
+        .post('/generate')
+        .set(INTERNAL_HEADERS);
       expect(response.status).toBe(403);
     });
 
     it('should return 403 if role is not authorized', async () => {
       const response = await request(app)
         .post('/generate')
-        .set('x-user-role', 'Consultant');
+        .set({ ...INTERNAL_HEADERS, 'x-user-role': 'Consultant' });
 
       expect(response.status).toBe(403);
     });

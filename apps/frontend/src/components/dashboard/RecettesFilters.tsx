@@ -35,7 +35,7 @@ interface RecettesFiltersProps {
   onApply: () => void;
   onReset: () => void;
   antenneOptions: FilterOption[];
-  niveauOptions: FilterOption[];
+
   filiereOptions: FilterOption[];
   statutOptions: FilterOption[];
   typeFluxOptions: FilterOption[];
@@ -50,7 +50,7 @@ export function RecettesFilters({
   onApply,
   onReset,
   antenneOptions,
-  niveauOptions,
+
   filiereOptions,
   statutOptions,
   typeFluxOptions,
@@ -110,11 +110,11 @@ export function RecettesFilters({
             searchable
           />
 
-          {/* Niveau */}
+          {/* Promotion */}
           <Select
-            label="Niveau"
-            placeholder="Tous les niveaux"
-            options={niveauOptions}
+            label="Promotion"
+            placeholder="Toutes les promotions"
+            options={promotionOptions}
             value={filters.niveauId !== undefined ? String(filters.niveauId) : ''}
             onChange={(e) => setFilters((f) => ({ ...f, niveauId: e.target.value ? Number(e.target.value) : undefined }))}
             searchable

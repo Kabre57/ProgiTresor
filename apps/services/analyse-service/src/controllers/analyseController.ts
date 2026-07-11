@@ -132,7 +132,7 @@ export const handleSseConnection = (req: Request, res: Response) => {
   });
 };
 
-export const broadcastNotification = (type: string, message: string, payload: any) => {
+export const broadcastNotification = (type: string, message: string, payload: Record<string, unknown>) => {
   const data = JSON.stringify({ type, message, ...payload });
   
   for (const client of sseClients) {
@@ -168,4 +168,14 @@ export const generateAttestation = async (req: Request, res: Response, next: Nex
     next(err);
   }
 };
+
+export const getArchives = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const archives = await analyseService.getArchives();
+    res.json(archives);
+  } catch (err) {
+    next(err);
+  }
+};
+
 

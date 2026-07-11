@@ -1,0 +1,20 @@
+{
+  "node": {
+    "408d6c5d6bb1c1319cfbb3b421940aacc47e942e5b": {
+      "workers": {
+        "app/(dashboard)/account/settings/page": {
+          "moduleId": 79819,
+          "async": false,
+          "exportedName": "setTheme",
+          "filename": "apps/frontend/src/server/actions/theme.ts"
+        }
+      },
+      "layer": {
+        "app/(dashboard)/account/settings/page": "action-browser"
+      },
+      "exportedName": "setTheme",
+      "filename": "apps/frontend/src/server/actions/theme.ts"
+    }
+  },
+  "edge": {}
+}

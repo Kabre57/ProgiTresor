@@ -12,10 +12,12 @@ export default function FilieresPage() {
       fields={[
         { name: 'code', label: 'Code', required: true },
         { name: 'libelle', label: 'Libellé', required: true },
+        { name: 'abreviation', label: 'Abréviation', required: true },
       ]}
       columns={[
         { key: 'code', header: 'Code', render: (row) => row.code },
         { key: 'libelle', header: 'Libellé', render: (row) => row.libelle },
+        { key: 'abreviation', header: 'Abréviation', render: (row) => row.abreviation },
       ]}
     />
   );

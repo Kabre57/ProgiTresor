@@ -111,6 +111,7 @@ model LotTraitement {
   dateMiseAJour    DateTime                 @updatedAt @map("date_mise_a_jour") @db.Timestamptz
   ecritures        LotTraitementEcriture[]
   controles        ControleOpOt[]
+  remarques        String?                  @db.Text
 
   @@index([bordereauId])
   @@index([statut, dateCreation])

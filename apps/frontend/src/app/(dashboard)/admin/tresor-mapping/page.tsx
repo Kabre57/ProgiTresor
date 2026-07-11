@@ -29,9 +29,6 @@ export default function TresorMappingPage() {
   // Referential Queries
   const nomenclaturesQuery = useReferential('nomenclatures');
   const typeRecettesQuery = useReferential('types-recettes');
-  const niveauxQuery = useReferential('niveaux');
-  const statutsQuery = useReferential('statuts-etudiants');
-
   // Mutations
   const createMutation = useCreateReferential('nomenclatures');
   const updateMutation = useUpdateReferential('nomenclatures');
@@ -49,8 +46,7 @@ export default function TresorMappingPage() {
     const term = searchTerm.toLowerCase();
     return list.filter(
       (n) =>
-        n.libelleBrut?.toLowerCase().includes(term) ||
-        n.libelleStandard?.toLowerCase().includes(term) ||
+        n.libelle?.toLowerCase().includes(term) ||
         n.codeProduit?.toLowerCase().includes(term) ||
         n.typeRecette?.libelle?.toLowerCase().includes(term)
     );
@@ -60,14 +56,10 @@ export default function TresorMappingPage() {
   const handleOpenAdd = () => {
     setEditingNomenclature(null);
     setForm({
-      libelleBrut: '',
       codeProduit: '',
-      libelleStandard: '',
+      libelle: '',
       regexPattern: '',
       typeRecetteId: '',
-      niveauId: '',
-      statutId: '',
-      numVersement: '',
       montant: 0,
       actif: true,
     });
@@ -77,14 +69,10 @@ export default function TresorMappingPage() {
   const handleOpenEdit = (row: NomenclatureProduit) => {
     setEditingNomenclature(row);
     setForm({
-      libelleBrut: row.libelleBrut ?? '',
       codeProduit: row.codeProduit ?? '',
-      libelleStandard: row.libelleStandard ?? '',
+      libelle: row.libelle ?? '',
       regexPattern: row.regexPattern ?? '',
       typeRecetteId: row.typeRecetteId ?? '',
-      niveauId: row.niveauId ?? '',
-      statutId: row.statutId ?? '',
-      numVersement: row.numVersement ?? '',
       montant: row.montant ?? 0,
       actif: row.actif ?? true,
     });
@@ -97,14 +85,10 @@ export default function TresorMappingPage() {
   
   // Form Fields State
   const [form, setForm] = useState({
-    libelleBrut: '',
     codeProduit: '',
-    libelleStandard: '',
+    libelle: '',
     regexPattern: '',
     typeRecetteId: '' as string | number,
-    niveauId: '' as string | number,
-    statutId: '' as string | number,
-    numVersement: '' as string | number,
     montant: 0 as string | number,
     actif: true,
   });
@@ -122,7 +106,7 @@ export default function TresorMappingPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const computedCode = form.codeProduit.trim() || form.libelleStandard.trim()
+    const computedCode = form.codeProduit.trim() || form.libelle.trim()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .replace(/\s+/g, '-')
@@ -130,20 +114,16 @@ export default function TresorMappingPage() {
       .replace(/--+/g, '-')
       .toUpperCase();
 
-    if (!form.libelleBrut.trim() || !form.libelleStandard.trim() || !form.typeRecetteId) {
+    if (!form.libelle.trim() || !form.typeRecetteId) {
       toast.error('Veuillez remplir tous les champs obligatoires.');
       return;
     }
 
     const payload = {
-      libelleBrut: form.libelleBrut.trim(),
       codeProduit: computedCode,
-      libelleStandard: form.libelleStandard.trim(),
+      libelle: form.libelle.trim(),
       regexPattern: form.regexPattern.trim() || null,
       typeRecetteId: Number(form.typeRecetteId),
-      niveauId: form.niveauId ? Number(form.niveauId) : null,
-      statutId: form.statutId ? Number(form.statutId) : null,
-      numVersement: form.numVersement ? Number(form.numVersement) : null,
       montant: form.montant === '' ? 0 : Number(form.montant),
       actif: form.actif,
     };
@@ -183,26 +163,15 @@ export default function TresorMappingPage() {
     label: `${item.code} - ${item.libelle}`,
   }));
 
-  const niveauOptions = (niveauxQuery.data ?? []).map((item) => ({
-    value: String(item.id),
-    label: `${item.code} - ${item.libelle}${item.filiere?.libelle ? ` (${item.filiere.libelle})` : ''}`,
-  }));
 
-  const statutOptions = (statutsQuery.data ?? []).map((item) => ({
-    value: String(item.id),
-    label: `${item.code} - ${item.libelle}`,
-  }));
+
+
 
   const columns = [
     {
-      key: 'libelleBrut',
-      header: 'Libellé brut (Trésor Pay)',
-      render: (row: NomenclatureProduit) => <span className="font-semibold text-slate-800 dark:text-slate-200">{row.libelleBrut}</span>,
-    },
-    {
-      key: 'libelleStandard',
-      header: 'Libellé standard',
-      render: (row: NomenclatureProduit) => row.libelleStandard,
+      key: 'libelle',
+      header: 'Libellé',
+      render: (row: NomenclatureProduit) => <span className="font-semibold text-slate-800 dark:text-slate-200">{row.libelle}</span>,
     },
     {
       key: 'typeRecette',
@@ -215,23 +184,6 @@ export default function TresorMappingPage() {
       render: (row: NomenclatureProduit) => row.regexPattern ? (
         <code className="text-xs text-slate-600 dark:text-slate-300">{row.regexPattern}</code>
       ) : '-',
-    },
-    {
-      key: 'filiere',
-      header: 'Niveau / Filière',
-      render: (row: NomenclatureProduit) => row.niveau
-        ? `${row.niveau.libelle}${row.niveau.filiere?.libelle ? ` (${row.niveau.filiere.libelle})` : ''}`
-        : '-',
-    },
-    {
-      key: 'statut',
-      header: 'Statut Étudiant',
-      render: (row: NomenclatureProduit) => row.statut?.libelle ?? '-',
-    },
-    {
-      key: 'numVersement',
-      header: 'Versement',
-      render: (row: NomenclatureProduit) => row.numVersement ? `N°${row.numVersement}` : '-',
     },
     {
       key: 'montant',
@@ -326,19 +278,12 @@ export default function TresorMappingPage() {
         width={600}
       >
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             <Input
-              label="Libellé brut Trésor Pay (Obligatoire)"
-              placeholder="Ex: 1ER VERSEMENT FRAIS DE SCOLARITE"
-              value={form.libelleBrut}
-              onChange={(e) => setForm((prev) => ({ ...prev, libelleBrut: e.target.value }))}
-              required
-            />
-            <Input
-              label="Libellé standard (Obligatoire)"
+              label="Libellé (Obligatoire)"
               placeholder="Ex: Scolarité L1"
-              value={form.libelleStandard}
-              onChange={(e) => setForm((prev) => ({ ...prev, libelleStandard: e.target.value }))}
+              value={form.libelle}
+              onChange={(e) => setForm((prev) => ({ ...prev, libelle: e.target.value }))}
               required
             />
           </div>
@@ -358,30 +303,6 @@ export default function TresorMappingPage() {
               value={String(form.typeRecetteId)}
               onChange={(e) => setForm((prev) => ({ ...prev, typeRecetteId: e.target.value }))}
               required
-            />
-            <Select
-              label="Niveau / Filière"
-              placeholder="Tous les niveaux"
-              options={niveauOptions}
-              value={String(form.niveauId)}
-              onChange={(e) => setForm((prev) => ({ ...prev, niveauId: e.target.value }))}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Select
-              label="Statut Étudiant"
-              placeholder="Tous les statuts"
-              options={statutOptions}
-              value={String(form.statutId)}
-              onChange={(e) => setForm((prev) => ({ ...prev, statutId: e.target.value }))}
-            />
-            <Input
-              label="N° Versement"
-              type="number"
-              placeholder="Ex: 1"
-              value={form.numVersement}
-              onChange={(e) => setForm((prev) => ({ ...prev, numVersement: e.target.value }))}
             />
           </div>
 

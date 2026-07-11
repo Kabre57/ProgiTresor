@@ -40,4 +40,9 @@ export const analyseApi = {
     });
     return response.data;
   },
+
+  getArchives: async () => {
+    const response = await apiClient.get<any[]>('/analyse/archives');
+    return response.data;
+  },
 };

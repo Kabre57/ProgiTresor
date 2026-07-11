@@ -25,7 +25,7 @@ export const findById = async (id: number): Promise<Promotion | null> => {
 
 export const findByName = async (nom: string): Promise<Promotion | null> => {
   const end = dbQueryDuration.startTimer({ operation: 'promotion_find_by_name' });
-  try { return await prisma.promotion.findUnique({ where: { nom } }); }
+  try { return await prisma.promotion.findFirst({ where: { nom } }); }
   finally { end(); }
 };
 

@@ -66,7 +66,7 @@ const toPayload = (fields: ReferentialField[], values: Record<string, string | b
     payload[field.name] = String(rawValue ?? '').trim();
   });
 
-  const sourceValue = String(payload.nom || payload.libelle || payload.libelleStandard || payload.libelleBrut || '').trim();
+  const sourceValue = String(payload.nom || payload.libelle || '').trim();
   if (sourceValue) {
     const slug = sourceValue
       .normalize('NFD')
@@ -213,8 +213,8 @@ export function ReferentialPage<T extends ReferentialRecord>({
             ...values,
             statutId: String(opt.value),
             montant: String(amountVal),
-            libelleBrut: `${values.libelleBrut} ${suffix}`.toUpperCase(),
-            codeProduit: `${values.libelleStandard || values.libelleBrut}`
+            libelle: `${values.libelle} ${suffix}`.toUpperCase(),
+            codeProduit: `${values.libelle}`
               .normalize('NFD')
               .replace(/[\u0300-\u036f]/g, '')
               .replace(/\s+/g, '-')
@@ -287,12 +287,18 @@ export function ReferentialPage<T extends ReferentialRecord>({
             }
 
             // Check duplicate logic
-            const isUniqueField = ['code', 'codeProduit', 'libelleBrut', 'libelle', 'nom'].includes(field.name);
+            const isUniqueField = ['code', 'codeProduit', 'libelle', 'nom'].includes(field.name);
             const isDuplicate = isUniqueField && data.some(
-              (item) =>
-                String((item as any)[field.name] ?? '').trim().toLowerCase() ===
+              (item) => {
+                if (endpoint === 'promotions' && field.name === 'nom') {
+                  return String((item as any).nom ?? '').trim().toLowerCase() === String(values.nom ?? '').trim().toLowerCase() &&
+                         String((item as any).niveau ?? '').trim().toLowerCase() === String(values.niveau ?? '').trim().toLowerCase() &&
+                         item.id !== editing?.id;
+                }
+                return String((item as any)[field.name] ?? '').trim().toLowerCase() ===
                   String(values[field.name] ?? '').trim().toLowerCase() &&
-                item.id !== editing?.id
+                item.id !== editing?.id;
+              }
             );
 
             if (field.name === 'statutId' && isNomenclature && !editing) {

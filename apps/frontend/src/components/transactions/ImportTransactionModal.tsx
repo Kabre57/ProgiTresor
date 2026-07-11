@@ -173,14 +173,6 @@ export function ImportTransactionModal({ open, onClose }: ImportTransactionModal
   return (
     <Modal open={open} onClose={onClose} title="Importer des transactions" width={550}>
       <div className="space-y-6">
-        <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/10 text-xs text-amber-600 dark:text-amber-400 space-y-2">
-          <p className="font-semibold">Modes d'importation disponibles :</p>
-          <ul className="list-disc pl-4 space-y-1">
-            <li><strong>Glisser-déposer :</strong> importez un fichier CSV ou JSON structuré.</li>
-            <li><strong>Trésor Pay :</strong> récupérez automatiquement les paiements en attente sur la plateforme nationale.</li>
-          </ul>
-        </div>
-
         <Upload
           draggable
           accept=".json,.csv,.xlsx,.xls"

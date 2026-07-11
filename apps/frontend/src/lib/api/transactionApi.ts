@@ -98,7 +98,7 @@ export const transactionApi = {
   getGroupedByRecette: async (params?: QueryParams) => {
     const response = await apiClient.get<{
       nomenclatureId: number | null;
-      libelleStandard: string;
+      libelle: string;
       typeRecette: string;
       montantBudget: number;
       montantHorsBudget: number;

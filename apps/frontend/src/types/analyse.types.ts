@@ -2,7 +2,7 @@ export type AnalyseFilters = {
   dateDebut?: string;
   dateFin?: string;
   antenneId?: number;
-  niveauId?: number;
+  filiereId?: number;
   typeRecetteId?: number;
 };
 
@@ -11,9 +11,9 @@ export type SynthesisLine = {
   antenneId: number;
   antenneCode?: string;
   antenneLibelle?: string;
-  niveauId: number;
-  niveauCode?: string;
-  niveauLibelle?: string;
+  filiereId?: number;
+  filiereCode?: string;
+  filiereLibelle?: string;
   statutId?: number;
   statutLibelle?: string;
   typeRecetteId: number;
@@ -42,6 +42,9 @@ export type ValidateSynthesisPayload = {
   typeFluxId?: number;
   filters?: AnalyseFilters;
   lines?: SynthesisLine[];
+  titre?: string;
+  description?: string;
+  referenceVague?: string;
 };
 
 export type ValidateSynthesisResponse = {

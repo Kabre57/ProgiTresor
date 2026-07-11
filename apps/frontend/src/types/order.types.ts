@@ -24,3 +24,29 @@ export type PaymentOrder = {
   dateCreation?: string;
   [key: string]: unknown;
 };
+
+export type OrderListEnvelope = {
+  items?: PaymentOrder[];
+  data?: PaymentOrder[];
+  total?: number;
+  page?: number;
+  limit?: number;
+};
+
+export type OrderTransmissionResult = {
+  code: string;
+  success: boolean;
+  message?: string;
+  order?: PaymentOrder;
+  outboxQueued?: boolean;
+  bordereauStatus?: 'QUEUED' | 'CREATED' | 'ALREADY_EXISTS' | 'UNKNOWN';
+  downloadUrl?: string;
+};
+
+export type SingleOrderTransmissionResult = {
+  message: string;
+  order: PaymentOrder;
+  outboxQueued?: boolean;
+  bordereauStatus?: 'QUEUED' | 'CREATED' | 'ALREADY_EXISTS' | 'UNKNOWN';
+  downloadUrl?: string;
+};

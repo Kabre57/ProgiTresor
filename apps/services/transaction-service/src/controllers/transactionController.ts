@@ -317,6 +317,13 @@ export const fetchFromTresor = async (req: Request, res: Response, next: NextFun
         etudiantMatricule: '21P-0154ASIB',
         nomPayeurBrut: 'KOUAME AFFOUE MARIE',
         libelleProduitBrut: '1er Versement Frais de Scolarite',
+        filiere: 'INFIRMIER',
+        niveau: 'L1',
+        antenne: 'BOUAKE',
+        nom: 'KOUAME',
+        prenom: 'MARIE',
+        typeRecette: 'Scolarite L1 Public - Versement 1',
+        typeFlux: 'CLASSE',
       },
       {
         refTresor: `TRES-PAY-${Date.now()}-002`,
@@ -325,6 +332,13 @@ export const fetchFromTresor = async (req: Request, res: Response, next: NextFun
         etudiantMatricule: '22P-0987BKE',
         nomPayeurBrut: 'TRAORE BAKARY',
         libelleProduitBrut: 'Frais Encadrement L1',
+        filiere: 'INFIRMIER',
+        niveau: 'L1',
+        antenne: 'BOUAKE',
+        nom: 'TRAORE',
+        prenom: 'BAKARY',
+        typeRecette: 'Encadrement L1',
+        typeFlux: 'CLASSE',
       },
     ];
 

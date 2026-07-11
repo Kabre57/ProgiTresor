@@ -1,0 +1,20 @@
+{
+  "node": {
+    "408d6c5d6bb1c1319cfbb3b421940aacc47e942e5b": {
+      "workers": {
+        "app/(auth)/login/page": {
+          "moduleId": 76106,
+          "async": false,
+          "exportedName": "setTheme",
+          "filename": "apps/frontend/src/server/actions/theme.ts"
+        }
+      },
+      "layer": {
+        "app/(auth)/login/page": "action-browser"
+      },
+      "exportedName": "setTheme",
+      "filename": "apps/frontend/src/server/actions/theme.ts"
+    }
+  },
+  "edge": {}
+}

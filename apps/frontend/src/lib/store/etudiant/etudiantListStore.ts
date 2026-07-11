@@ -7,7 +7,6 @@ import type { Etudiant } from '@/types/etudiant.types';
 export type EtudiantListFilter = {
   antenneId?: number;
   filiereId?: number;
-  niveauId?: number;
   statutId?: number;
   promotionId?: number;
 };

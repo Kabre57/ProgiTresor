@@ -107,22 +107,12 @@ const navigationConfig: NavigationTree[] = [
             {
                 key: 'pilotageGroup.workflowBudget',
                 path: '',
-                title: 'Circuit Compta / Budget',
+                title: 'Gestion Budgétaire',
                 translateKey: '',
                 icon: 'orders',
                 type: NAV_ITEM_TYPE_COLLAPSE,
                 authority: workflowRoles,
                 subMenu: [
-                    {
-                        key: 'compta.bordereaux',
-                        path: '/compta/bordereaux',
-                        title: 'Bordereaux',
-                        translateKey: '',
-                        icon: '',
-                        type: NAV_ITEM_TYPE_ITEM,
-                        authority: workflowRoles,
-                        subMenu: [],
-                    },
                     {
                         key: 'compta.lots',
                         path: '/compta/lots',
@@ -276,16 +266,7 @@ const navigationConfig: NavigationTree[] = [
                         authority: etudiantRoles,
                         subMenu: [],
                     },
-                    {
-                        key: 'admin.referentials.niveaux',
-                        path: '/admin/niveaux',
-                        title: 'Niveaux',
-                        translateKey: '',
-                        icon: '',
-                        type: NAV_ITEM_TYPE_ITEM,
-                        authority: etudiantRoles,
-                        subMenu: [],
-                    },
+
                     {
                         key: 'admin.referentials.filieres',
                         path: '/admin/filieres',
@@ -336,16 +317,7 @@ const navigationConfig: NavigationTree[] = [
                         authority: etudiantRoles,
                         subMenu: [],
                     },
-                    {
-                        key: 'admin.referentials.fraisParNiveau',
-                        path: '/admin/frais-par-niveau',
-                        title: 'Frais par niveau',
-                        translateKey: '',
-                        icon: '',
-                        type: NAV_ITEM_TYPE_ITEM,
-                        authority: [...accountingRoles, ...etudiantRoles],
-                        subMenu: [],
-                    },
+
                 ],
             },
         ],

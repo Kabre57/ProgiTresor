@@ -111,10 +111,7 @@ export const protectedRoutes: Routes = {
         key: 'admin.referentials.antennes',
         authority: etudiantRoles,
     },
-    '/admin/niveaux': {
-        key: 'admin.referentials.niveaux',
-        authority: etudiantRoles,
-    },
+
     '/admin/filieres': {
         key: 'admin.referentials.filieres',
         authority: etudiantRoles,
@@ -135,10 +132,7 @@ export const protectedRoutes: Routes = {
         key: 'admin.referentials.nomenclatures',
         authority: etudiantRoles,
     },
-    '/admin/frais-par-niveau': {
-        key: 'admin.referentials.fraisParNiveau',
-        authority: [...accountingRoles, ...etudiantRoles],
-    },
+
     '/etudiant/portail': {
         key: 'etudiant.portail',
         authority: ['ETUDIANT', 'Etudiant'],

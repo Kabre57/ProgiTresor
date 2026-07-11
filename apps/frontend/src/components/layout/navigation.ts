@@ -56,13 +56,13 @@ export const navigationGroups: NavigationGroup[] = [
       { label: 'Réf. Promotions', href: '/etudiant/promotions', icon: PiListChecksDuotone, roles: [...accountingRoles, ...etudiantRoles] },
       { label: 'Promotions', href: '/admin/promotions', icon: PiListChecksDuotone, roles: adminRoles },
       { label: 'Antennes', href: '/admin/antennes', icon: PiBuildingDuotone, roles: [...accountingRoles, ...etudiantRoles] },
-      { label: 'Niveaux', href: '/admin/niveaux', icon: PiStackDuotone, roles: [...accountingRoles, ...etudiantRoles] },
+
       { label: 'Filières', href: '/admin/filieres', icon: PiStackDuotone, roles: [...accountingRoles, ...etudiantRoles] },
       { label: 'Statuts', href: '/admin/statuts', icon: PiListChecksDuotone, roles: [...accountingRoles, ...etudiantRoles] },
       { label: 'Types flux', href: '/admin/types-flux', icon: PiShareNetworkDuotone, roles: [...accountingRoles, ...etudiantRoles] },
       { label: 'Types recettes', href: '/admin/types-recettes', icon: PiCurrencyCircleDollarDuotone, roles: [...accountingRoles, ...etudiantRoles] },
       { label: 'Nomenclatures', href: '/admin/nomenclatures', icon: PiBookOpenDuotone, roles: [...accountingRoles, ...etudiantRoles] },
-      { label: 'Frais par niveau', href: '/admin/frais-par-niveau', icon: PiCurrencyCircleDollarDuotone, roles: [...accountingRoles, ...etudiantRoles] },
+
     ],
   },
   {

@@ -11,7 +11,7 @@ export interface PrintableDashboardProps {
   } | null;
   byLibelle: { libelle: string; type: string; montant: number }[];
   topNomenclatures: {
-    libelleStandard: string;
+    libelle: string;
     typeRecette: string;
     montantBudget: number;
     montantHorsBudget: number;
@@ -111,7 +111,7 @@ export const PrintableDashboard = forwardRef<HTMLDivElement, PrintableDashboardP
               <tbody>
                 {topNomenclatures.map((item, i) => (
                   <tr key={i}>
-                    <td style={cellStyle}>{item.libelleStandard}</td>
+                    <td style={cellStyle}>{item.libelle}</td>
                     <td style={cellStyle}>{item.typeRecette}</td>
                     <td style={{ ...cellStyle, textAlign: 'right' }}>{formatCurrency(item.montantBudget)}</td>
                     <td style={{ ...cellStyle, textAlign: 'right' }}>{formatCurrency(item.montantHorsBudget)}</td>

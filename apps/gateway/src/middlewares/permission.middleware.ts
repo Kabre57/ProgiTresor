@@ -6,7 +6,10 @@ import Redis from 'ioredis';
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 const redis = new Redis(redisUrl);
 
-const JWT_SECRET = process.env.JWT_SECRET || 'votre_secret_jwt_tres_long_et_aleatoire';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET must be set as an environment variable in the Gateway.');
+}
 
 export interface AuthenticatedRequest extends Request {
   userPerms?: Record<string, number>;

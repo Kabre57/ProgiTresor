@@ -23,6 +23,10 @@ if (!JWT_SECRET || !REFRESH_TOKEN_SECRET) {
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 const redis = new Redis(redisUrl);
 
+const hashToken = (token: string): string => {
+  return crypto.createHash('sha256').update(token).digest('hex');
+};
+
 interface RefreshTokenPayload extends JwtPayload {
   userId: number;
   token_version: number;
@@ -119,7 +123,7 @@ export const loginUser = async (username: string, password: string) => {
   expireAt.setDate(expireAt.getDate() + 7);
   await prisma.refreshToken.create({
     data: {
-      token: refreshToken,
+      token: hashToken(refreshToken),
       utilisateurId: user.id,
       expireAt,
     },
@@ -157,7 +161,7 @@ export const refreshAccessToken = async (refreshToken: string) => {
 
     // 1. Vérifier la validité et l'état de révocation explicite en DB
     const dbToken = await prisma.refreshToken.findUnique({
-      where: { token: refreshToken },
+      where: { token: hashToken(refreshToken) },
     });
     if (!dbToken || dbToken.revoked || dbToken.expireAt < new Date()) {
       throw new UnauthorizedError('Invalid or revoked refresh token');
@@ -212,7 +216,7 @@ export const refreshAccessToken = async (refreshToken: string) => {
 export const logoutUser = async (refreshToken: string) => {
   try {
     await prisma.refreshToken.update({
-      where: { token: refreshToken },
+      where: { token: hashToken(refreshToken) },
       data: { revoked: true },
     });
   } catch (error) {

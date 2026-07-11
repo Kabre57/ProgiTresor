@@ -93,12 +93,8 @@ export default function NomenclaturesPage() {
   };
 
   const columns: DataTableColumn<NomenclatureProduit>[] = [
-    { key: 'libelleBrut', header: 'Libellé Brut', render: (row) => row.libelleBrut },
-    { key: 'libelleStandard', header: 'Standard', render: (row) => row.libelleStandard },
+    { key: 'libelle', header: 'Libellé', render: (row) => row.libelle },
     { key: 'typeRecette', header: 'Recette', render: (row) => row.typeRecette?.libelle ?? row.typeRecetteId },
-    { key: 'niveau', header: 'Niveau', render: (row) => row.niveau?.libelle ?? '-' },
-    { key: 'filiere', header: 'Filière', render: (row) => row.niveau?.filiere?.libelle ?? '-' },
-    { key: 'statut', header: 'Statut', render: (row) => row.statut?.libelle ?? 'Tous' },
     { key: 'montant', header: 'Montant', render: (row) => formatCurrency(row.montant) },
     { key: 'actif', header: 'Statut', render: (row) => <Badge tone={row.actif ? 'success' : 'danger'}>{row.actif ? 'Actif' : 'Inactif'}</Badge> },
     {

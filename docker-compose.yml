@@ -120,6 +120,7 @@ services:
       - DB_POOL_MAX=${DB_POOL_MAX:-20}
       - NODE_ENV=production
       - INTERNAL_API_SECRET=${INTERNAL_API_SECRET}
+      - ANALYSE_SERVICE_URL=http://analyse-service:5005
     depends_on:
       postgres:
         condition: service_healthy

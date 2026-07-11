@@ -38,7 +38,7 @@ export const uploadEtudiantPhoto = async (req: Request, res: Response, next: Nex
       data: { photoUrl: dataUrl },
       include: {
         antenne: true,
-        niveau: { include: { filiere: true } },
+        filiere: true,
         statut: true,
         promotion: true,
       },
@@ -66,7 +66,7 @@ export const deleteEtudiantPhoto = async (req: Request, res: Response, next: Nex
       data: { photoUrl: null },
       include: {
         antenne: true,
-        niveau: { include: { filiere: true } },
+        filiere: true,
         statut: true,
         promotion: true,
       },

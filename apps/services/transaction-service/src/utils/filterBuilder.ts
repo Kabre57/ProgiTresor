@@ -39,7 +39,6 @@ export const buildTransactionWhereClause = async (query: any): Promise<Prisma.Tr
     antenneId,
     filiereId,
     filiere,
-    niveauId,
     niveau,
     statutId,
     typeFluxId,
@@ -74,7 +73,6 @@ export const buildTransactionWhereClause = async (query: any): Promise<Prisma.Tr
   const parsedTypeRecetteIds = parseMultiSelect(typeRecetteId);
   const parsedAntenneIds = parseMultiSelect(antenneId);
   const parsedFiliereIds = parseMultiSelect(filiereId);
-  const parsedNiveauIds = parseMultiSelect(niveauId);
   const parsedStatutIds = parseMultiSelect(statutId);
 
   // 2. Direct simple filters
@@ -133,7 +131,6 @@ export const buildTransactionWhereClause = async (query: any): Promise<Prisma.Tr
     isPresent(promotionId) ||
     parsedAntenneIds !== undefined ||
     parsedFiliereIds !== undefined ||
-    parsedNiveauIds !== undefined ||
     parsedStatutIds !== undefined;
 
   if (hasEtudiantFilters) {
@@ -148,7 +145,6 @@ export const buildTransactionWhereClause = async (query: any): Promise<Prisma.Tr
     if (etudiantSearch) params.append('search', etudiantSearch);
     if (parsedAntenneIds) params.append('antenneId', parsedAntenneIds.join(','));
     if (parsedFiliereIds) params.append('filiereId', parsedFiliereIds.join(','));
-    if (parsedNiveauIds) params.append('niveauId', parsedNiveauIds.join(','));
     if (parsedStatutIds) params.append('statutId', parsedStatutIds.join(','));
     if (isPresent(promotion)) params.append('promotion', String(promotion));
     if (isPresent(promotionId)) params.append('promotionId', String(promotionId));

@@ -129,7 +129,10 @@ function TransactionsContent() {
     {
       key: 'promotion',
       header: 'Promotion',
-      render: (row: any) => String(row.etudiant?.promotion?.nom || row.etudiant?.promotionString || '-')
+      render: (row: any) => {
+        const p = row.etudiant?.promotion;
+        return String(p?.niveau ? `${p.niveau} ${p.ordre}` : (p?.nom || row.etudiant?.promotionString || '-'));
+      }
     },
     {
       key: 'antenne',
@@ -137,21 +140,16 @@ function TransactionsContent() {
       render: (row: any) => String(row.etudiant?.antenne?.nom || '-')
     },
     {
-      key: 'niveau',
-      header: 'Niveau',
-      render: (row: any) => String(row.etudiant?.niveau?.libelle || row.etudiant?.niveau?.code || '-')
-    },
-    {
       key: 'filiere',
       header: 'Filière',
-      render: (row: any) => String(row.etudiant?.niveau?.filiere?.libelle || row.etudiant?.niveau?.filiere?.code || '-')
+      render: (row: any) => String(row.etudiant?.filiere?.libelle || row.filiere || '-')
     },
     {
       key: 'nomenclature',
       header: 'Nomenclature',
       render: (row: any) => row.nomenclature ? (
         <div className="flex flex-col">
-          <span className="font-medium text-slate-700 dark:text-slate-300">{row.nomenclature.libelleStandard}</span>
+          <span className="font-medium text-slate-700 dark:text-slate-300">{row.nomenclature.libelle}</span>
           <span className="text-xs text-slate-400">{row.nomenclature.codeProduit}</span>
         </div>
       ) : '-'

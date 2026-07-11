@@ -10,10 +10,13 @@ export interface ParsedTransactionItem {
   nomPayeurBrut?: string | null;
   contactPayeur?: string | null;
   libelleProduitBrut?: string | null;
-  filiere?: string | null;
-  niveau?: string | null;
+  filiere: string;
+  niveau: string;
   versement?: string | null;
   typeFrais?: string | null;
+  antenne: string;
+  typeRecette: string;
+  typeFlux: string;
 }
 
 export const normalizeFinancialLabel = (value: unknown): string => String(value ?? '')
@@ -50,7 +53,6 @@ const headerMap: Record<string, keyof ParsedTransactionItem> = {
   'produit': 'libelleProduitBrut',
   'libelleproduitbrut': 'libelleProduitBrut',
   'libelle_produit_brut': 'libelleProduitBrut',
-  'type flux': 'typeFluxId',
   'type_flux_id': 'typeFluxId',
   'typefluxid': 'typeFluxId',
   'filiere': 'filiere',
@@ -59,6 +61,16 @@ const headerMap: Record<string, keyof ParsedTransactionItem> = {
   'type frais': 'typeFrais',
   'type_frais': 'typeFrais',
   'typefrais': 'typeFrais',
+  'antenne': 'antenne',
+  'antenneid': 'antenne',
+  'antenne id': 'antenne',
+  'antenne_id': 'antenne',
+  'type recette': 'typeRecette',
+  'type_recette': 'typeRecette',
+  'typerecette': 'typeRecette',
+  'type flux': 'typeFlux',
+  'type_flux': 'typeFlux',
+  'typeflux': 'typeFlux',
 };
 
 /**

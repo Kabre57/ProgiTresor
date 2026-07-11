@@ -67,3 +67,15 @@ export const comptaControlesOpRoute = {
   action: 'READ_CONTROL',
   requiredLevel: 1,
 };
+
+export const comptaPendingEcrituresRoute = {
+  path: '/api/compta/ecritures/pending',
+  target: config.COMPTA_SERVICE_URL,
+  secure: true,
+  roles: budgetWorkflowRoles,
+  serviceBasePath: '/ecritures/pending',
+  perimeter: 'BUDGET',
+  action: 'READ_ECRITURES',
+  requiredLevel: 1,
+};
+

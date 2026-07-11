@@ -23,7 +23,7 @@ type SyntheseScope = 'both' | 'budget' | 'hors-budget';
 
 export interface RecetteRow {
   nomenclatureId: number | null;
-  libelleStandard: string;
+  libelle: string;
   typeRecette: string;
   typeFluxCode?: string;
   montantBudget: number;
@@ -76,7 +76,7 @@ const initialFilters: RecettesFiltersState = {
   // Queries
   const antennasQuery = useReferential('antennes');
   const filieresQuery = useReferential('filieres');
-  const niveauxQuery = useReferential('niveaux');
+  const promotionsQuery = useReferential('promotions');
   const statutsQuery = useReferential('statuts-etudiants');
   const typesFluxQuery = useReferential('types-flux');
   const typesRecettesQuery = useReferential('types-recettes');
@@ -127,7 +127,7 @@ const initialFilters: RecettesFiltersState = {
       antenneLibelle: 'Toutes les antennes',
       niveauLibelle: 'Tous les niveaux',
       statutLibelle: 'Tous les statuts',
-      typeRecetteLibelle: selectedLine.libelleStandard || selectedLine.typeRecette || 'Recette',
+      typeRecetteLibelle: selectedLine.libelle || selectedLine.typeRecette || 'Recette',
       montantCumule: selectedLine.montantTotal,
       nombreFlux: selectedLine.nombreFlux,
       transactionIds: selectedLine.transactionIds || [],
@@ -170,8 +170,7 @@ const initialFilters: RecettesFiltersState = {
 
   interface NomenclatureItem {
     id: number;
-    libelleStandard: string;
-    libelleBrut: string;
+    libelle: string;
     typeRecetteId: number;
     typeRecette?: {
       id: number;
@@ -188,9 +187,9 @@ const initialFilters: RecettesFiltersState = {
     label: item.nom,
   }));
 
-  const niveauOptions = ((niveauxQuery.data as NiveauData[]) ?? []).map((item) => ({
+  const promotionOptions = ((promotionsQuery.data as any[]) ?? []).map((item) => ({
     value: String(item.id),
-    label: item.libelle || item.code || '',
+    label: item.niveau ? `${item.niveau} ${item.ordre}` : (item.nom || ''),
   }));
 
   const filiereOptions = ((filieresQuery.data as FiliereData[]) ?? []).map((item) => ({
@@ -267,14 +266,10 @@ const initialFilters: RecettesFiltersState = {
     })
     .map((item) => ({
       value: String(item.id),
-      label: item.libelleStandard || item.libelleBrut,
+      label: item.libelle,
     }));
 
-  const promotionsQuery = usePromotions();
-  const promotionOptions = ((promotionsQuery.data as PromotionData[]) ?? []).map((p) => ({
-    value: p.nom,
-    label: p.nom,
-  }));
+
 
   const handleApplyFilters = () => {
     if (!isValidDate(filters.dateDebut) || !isValidDate(filters.dateFin)) {
@@ -308,7 +303,7 @@ const initialFilters: RecettesFiltersState = {
 
   const budgetColumns = [
     { key: 'typeRecette', header: 'Type de recette', render: (row: RecetteRow) => row.typeRecette },
-    { key: 'libelleStandard', header: 'Libellé standard / Nomenclature', render: (row: RecetteRow) => row.libelleStandard },
+    { key: 'libelle', header: 'Libellé / Nomenclature', render: (row: RecetteRow) => row.libelle },
     { key: 'montantPaye', header: 'Montant Payé', render: (row: RecetteRow) => <span className="font-bold">{formatCurrency(row.montantBudget)}</span> },
     {
       key: 'nombreFlux',
@@ -330,7 +325,7 @@ const initialFilters: RecettesFiltersState = {
 
   const horsBudgetColumns = [
     { key: 'typeRecette', header: 'Type de recette', render: (row: RecetteRow) => row.typeRecette },
-    { key: 'libelleStandard', header: 'Libellé standard / Nomenclature', render: (row: RecetteRow) => row.libelleStandard },
+    { key: 'libelle', header: 'Libellé / Nomenclature', render: (row: RecetteRow) => row.libelle },
     { key: 'montantPaye', header: 'Montant Payé', render: (row: RecetteRow) => <span className="font-bold">{formatCurrency(row.montantHorsBudget)}</span> },
     {
       key: 'nombreFlux',
@@ -390,7 +385,7 @@ const initialFilters: RecettesFiltersState = {
     // Sort by total descending and take top 5
     const sorted = [...data].sort((a, b) => b.montantTotal - a.montantTotal).slice(0, 5);
 
-    const categories = sorted.map((item) => item.libelleStandard || 'Autre');
+    const categories = sorted.map((item) => item.libelle || 'Autre');
     const series = [
       {
         name: 'Montant (FCFA)',
@@ -447,7 +442,6 @@ const initialFilters: RecettesFiltersState = {
         onApply={handleApplyFilters}
         onReset={handleResetFilters}
         antenneOptions={antenneOptions}
-        niveauOptions={niveauOptions}
         filiereOptions={filiereOptions}
         statutOptions={statutOptions}
         typeFluxOptions={typeFluxOptions}
@@ -500,7 +494,7 @@ const initialFilters: RecettesFiltersState = {
             <DataTable<any>
               data={paginatedBudgetRecipes}
               loading={recettesQuery.isLoading}
-              getRowKey={(row, i) => `${row.nomenclatureId ?? 'raw'}-${row.libelleStandard}-${i}`}
+              getRowKey={(row, i) => `${row.nomenclatureId ?? 'raw'}-${row.libelle}-${i}`}
               emptyLabel="Aucune recette budget enregistrée pour cette période"
               columns={budgetColumns}
               pagination={{
@@ -527,7 +521,7 @@ const initialFilters: RecettesFiltersState = {
             <DataTable<any>
               data={paginatedHorsBudgetRecipes}
               loading={recettesQuery.isLoading}
-              getRowKey={(row, i) => `${row.nomenclatureId ?? 'raw'}-${row.libelleStandard}-${i}`}
+              getRowKey={(row, i) => `${row.nomenclatureId ?? 'raw'}-${row.libelle}-${i}`}
               emptyLabel="Aucune recette hors budget enregistrée pour cette période"
               columns={horsBudgetColumns}
               pagination={{
