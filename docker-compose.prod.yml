@@ -1,0 +1,78 @@
+
+# ================================================
+# docker-compose.prod.yml — ProgiTresor Production
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.production up -d
+# ================================================
+
+services:
+
+  # --- Infrastructure ---
+
+  postgres:
+    restart: unless-stopped
+
+  redis:
+    restart: unless-stopped
+
+  minio:
+    restart: unless-stopped
+    # MinIO API (9000) non exposé publiquement — accès via Nginx storage.progitpaie.online → 9001
+    ports:
+      - "127.0.0.1:9000:9000"   # Écoute uniquement en local (MinIO S3 API interne)
+      - "127.0.0.1:9001:9001"   # Console admin (accessible via Nginx)
+
+  # --- API Gateway ---
+
+  gateway:
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:4000:4000"   # Exposé uniquement en local → Nginx forward vers api.progitpaie.online
+    environment:
+      - NODE_ENV=production
+
+  # --- Microservices ---
+
+  auth-service:
+    restart: unless-stopped
+
+  etudiant-service:
+    restart: unless-stopped
+
+  transaction-service:
+    restart: unless-stopped
+
+  order-service:
+    restart: unless-stopped
+
+  analyse-service:
+    restart: unless-stopped
+    environment:
+      - PDF_PUBLIC_BASE_URL=https://progitpaie.online/api/analyse
+      - PDF_STORAGE_TYPE=s3
+
+  compta-service:
+    restart: unless-stopped
+
+  budget-service:
+    restart: unless-stopped
+
+  # --- Frontend Next.js ---
+
+  frontend:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+      args:
+        # URL publique de l'API — passée au build Next.js
+        NEXT_PUBLIC_API_GATEWAY: https://progitpaie.online/api
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3030:3030"   # Exposé uniquement en local → Nginx forward vers progitpaie.online
+    environment:
+      - PORT=3030
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_GATEWAY=https://progitpaie.online/api
+
+networks:
+  default:
+    name: progitpaie_network
