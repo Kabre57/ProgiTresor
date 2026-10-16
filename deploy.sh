@@ -1,14 +1,14 @@
 #!/bin/bash
 # ================================================
 # deploy.sh — Script de déploiement ProgiTresor
-# VPS LWS — progitpaie.online (180.149.199.203)
+# VPS LWS — progitresor.online (180.149.199.203)
 # Usage: bash deploy.sh
 # ================================================
 
 set -e  # Arrêt si erreur
 
 REPO_URL="https://github.com/Kabre57/ProgiTresor.git"
-APP_DIR="$HOME/apps/progitpaie"
+APP_DIR="$HOME/apps/progitresor"
 ENV_FILE="$APP_DIR/.env.production"
 COMPOSE_CMD="docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.production"
 
@@ -66,7 +66,7 @@ if [ ! -f "$ENV_FILE" ]; then
   DATABASE_URL_COMPTA=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/progi_compta
   DATABASE_URL_BUDGET=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/progi_budget
   PDF_STORAGE_TYPE=s3
-  PDF_PUBLIC_BASE_URL=https://progitpaie.online/api/analyse
+  PDF_PUBLIC_BASE_URL=https://progitresor.online/api/analyse
 EOF
   echo "  ─────────────────────────────────────────────────"
   echo ""
@@ -130,9 +130,9 @@ echo "État des conteneurs:"
 $COMPOSE_CMD ps
 echo ""
 echo "🌐 URLs (après config Nginx + SSL):"
-echo "   Frontend  → https://progitpaie.online"
-echo "   API       → https://api.progitpaie.online"
-echo "   MinIO     → https://storage.progitpaie.online"
+echo "   Frontend  → https://progitresor.online"
+echo "   API       → https://api.progitresor.online"
+echo "   MinIO     → https://storage.progitresor.online"
 echo ""
 echo "📋 Commandes utiles:"
 echo "   Logs      → $COMPOSE_CMD logs -f"

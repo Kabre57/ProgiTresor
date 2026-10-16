@@ -16,7 +16,7 @@ services:
 
   minio:
     restart: unless-stopped
-    # MinIO API (9000) non exposé publiquement — accès via Nginx storage.progitpaie.online → 9001
+    # MinIO API (9000) non exposé publiquement — accès via Nginx storage.progitresor.online → 9001
     ports:
       - "127.0.0.1:9000:9000"   # Écoute uniquement en local (MinIO S3 API interne)
       - "127.0.0.1:9001:9001"   # Console admin (accessible via Nginx)
@@ -26,7 +26,7 @@ services:
   gateway:
     restart: unless-stopped
     ports:
-      - "127.0.0.1:4000:4000"   # Exposé uniquement en local → Nginx forward vers api.progitpaie.online
+      - "127.0.0.1:4000:4000"   # Exposé uniquement en local → Nginx forward vers api.progitresor.online
     environment:
       - NODE_ENV=production
 
@@ -47,7 +47,7 @@ services:
   analyse-service:
     restart: unless-stopped
     environment:
-      - PDF_PUBLIC_BASE_URL=https://progitpaie.online/api/analyse
+      - PDF_PUBLIC_BASE_URL=https://progitresor.online/api/analyse
       - PDF_STORAGE_TYPE=s3
 
   compta-service:
@@ -64,15 +64,15 @@ services:
       dockerfile: Dockerfile
       args:
         # URL publique de l'API — passée au build Next.js
-        NEXT_PUBLIC_API_GATEWAY: https://progitpaie.online/api
+        NEXT_PUBLIC_API_GATEWAY: https://progitresor.online/api
     restart: unless-stopped
     ports:
-      - "127.0.0.1:3030:3030"   # Exposé uniquement en local → Nginx forward vers progitpaie.online
+      - "127.0.0.1:3030:3030"   # Exposé uniquement en local → Nginx forward vers progitresor.online
     environment:
       - PORT=3030
       - NODE_ENV=production
-      - NEXT_PUBLIC_API_GATEWAY=https://progitpaie.online/api
+      - NEXT_PUBLIC_API_GATEWAY=https://progitresor.online/api
 
 networks:
   default:
-    name: progitpaie_network
+    name: progitresor_network
