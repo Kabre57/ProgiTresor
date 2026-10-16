@@ -1,7 +1,107 @@
-**/node_modules
-!apps/gateway/node_modules
-!apps/frontend/node_modules
-**/dist
+# =============================================
+# .dockerignore — ProgiTresor Production
+# Exclut tout ce qui n'est PAS nécessaire
+# pour builder et faire tourner l'app sur VPS
+# =============================================
+
+# =============================================
+# Git & CI
+# =============================================
 .git
+.github
+.gitignore
+
+# =============================================
+# Variables d'environnement (ne jamais inclure)
+# =============================================
 .env
-npm-debug.log
+.env.*
+!.env.example
+
+# =============================================
+# Dépendances (réinstallées dans le conteneur)
+# =============================================
+**/node_modules
+
+# =============================================
+# Build outputs locaux (régénérés dans Docker)
+# =============================================
+**/dist
+**/dist_temp
+**/build
+**/out
+**/.next
+**/.turbo
+**/coverage
+*.tsbuildinfo
+
+# =============================================
+# Tests (inutiles en production)
+# =============================================
+tests/
+playwright/
+playwright-report/
+test-results/
+**/tests/
+**/*.test.ts
+**/*.test.js
+**/*.spec.ts
+**/*.spec.js
+jest.config.js
+playwright.config.js
+**/jest.config.js
+**/playwright.config.js
+
+# =============================================
+# Documentation (inutile pour faire tourner l'app)
+# =============================================
+docs/
+IA_Workflow/
+IA_Workflow_Livrables/
+Ia/
+*.md
+!apps/*/README.md
+
+# =============================================
+# Données & fichiers de développement local
+# =============================================
+extraction/
+ecmenextjs-127/
+ai-agent-workflow-builder/
+
+# =============================================
+# Scripts de dev / analyse (inutiles en prod)
+# =============================================
+scripts/merge-apis.js
+scripts/merge-reports.js
+scripts/generate-report.js
+scripts/generate-test-data.js
+scripts/seed-test-data.js
+scripts/cleanup-test-data.js
+
+# =============================================
+# Fichiers utilitaires de debug
+# =============================================
+**/get_user_jwt_for_id.js
+**/get_user_jwt_for_id.ts
+**/Dockerfile.md
+**/openapi.json
+cleanup_logs.sh
+docker-compose.yml.backup
+
+# =============================================
+# IDE & OS
+# =============================================
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# =============================================
+# Logs
+# =============================================
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

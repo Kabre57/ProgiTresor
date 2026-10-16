@@ -1,3 +1,0 @@
-module.exports=[68173,a=>{"use strict";var b=a.i(86531),c=a.i(810);function d(){return(0,b.jsx)(c.ReferentialPage,{endpoint:"statuts-etudiants",title:"Statuts étudiants",description:"États administratifs des étudiants.",fields:[{name:"code",label:"Code",required:!0},{name:"libelle",label:"Libellé",required:!0}],columns:[{key:"libelle",header:"Libellé",render:a=>a.libelle}]})}a.s(["default",()=>d])}];
-
-//# sourceMappingURL=apps_frontend_src_app_%28dashboard%29_admin_statuts_page_tsx_6a5200ee._.js.map

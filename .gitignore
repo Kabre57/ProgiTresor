@@ -1,32 +1,95 @@
+# =============================================
 # Git
+# =============================================
 .git/
 
-# Env files
+# =============================================
+# Variables d'environnement (JAMAIS commiter)
+# =============================================
 .env
 .env.*
 !.env.example
 
-# Node deps (partout, dont apps/*)
+# =============================================
+# Dépendances Node (régénérées au build)
+# =============================================
 **/node_modules/
 
-# Build outputs (partout)
+# =============================================
+# Build outputs (régénérés par Docker)
+# =============================================
 **/dist/
+**/dist_temp/
 **/build/
 **/out/
+**/.next/
+**/.turbo/
+**/coverage/
+*.tsbuildinfo
 
-# IDE
+# =============================================
+# FICHIERS INUTILES EN PRODUCTION VPS
+# =============================================
+
+# Documentation (pas nécessaire pour faire tourner l'app)
+docs/
+IA_Workflow/
+IA_Workflow_Livrables/
+Ia/
+*.md
+!README.md
+
+# Tests (ne pas déployer sur le VPS)
+tests/
+playwright/
+playwright-report/
+test-results/
+**/tests/
+**/*.test.ts
+**/*.test.js
+**/*.spec.ts
+**/*.spec.js
+jest.config.js
+playwright.config.js
+
+# Scripts de dev / CI (inutiles en prod)
+scripts/merge-apis.js
+scripts/merge-reports.js
+scripts/generate-report.js
+scripts/generate-test-data.js
+scripts/seed-test-data.js
+scripts/cleanup-test-data.js
+
+# Données de développement / extraction locale
+extraction/
+ecmenextjs-127/
+ai-agent-workflow-builder/
+
+# Fichiers de debug / utilitaires dev
+**/get_user_jwt_for_id.js
+**/get_user_jwt_for_id.ts
+**/Dockerfile.md
+cleanup_logs.sh
+
+# Rapports et analyses (pas nécessaires en prod)
+ProgiTresor_Analyse_Synthese.md
+ProgiTresor_Workflow_Usage_Guide.md
+README-TESTS.md
+docker-compose.yml.backup
+
+# =============================================
+# IDE & OS
+# =============================================
 .vscode/
 .idea/
+.DS_Store
+Thumbs.db
 
+# =============================================
 # Logs
+# =============================================
 *.log
 logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-
-# OS
-.DS_Store
-Thumbs.db
-node_modules/
-apps/frontend/node_modules/

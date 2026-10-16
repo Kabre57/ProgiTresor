@@ -1,3 +1,0 @@
-module.exports=[51194,a=>{"use strict";var b=a.i(86531),c=a.i(810);function d(){return(0,b.jsx)(c.ReferentialPage,{endpoint:"types-flux",title:"Types de flux",description:"Catégories de flux financiers utilisées par les recettes.",fields:[{name:"code",label:"Code",required:!0},{name:"libelle",label:"Libellé",required:!0}],columns:[{key:"libelle",header:"Libellé",render:a=>a.libelle}]})}a.s(["default",()=>d])}];
-
-//# sourceMappingURL=apps_frontend_src_app_%28dashboard%29_admin_types-flux_page_tsx_c7b02869._.js.map
