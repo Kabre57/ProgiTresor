@@ -4,13 +4,12 @@ set -Eeuo pipefail
 usage() {
   cat <<'USAGE'
 Usage:
-  scripts/cleanup-all-data-except-admin.sh             # aperçu uniquement
-  scripts/cleanup-all-data-except-admin.sh --dry-run   # aperçu uniquement
-  scripts/cleanup-all-data-except-admin.sh --apply     # aperçu, puis confirmation explicite
+  scripts/cleanup-data-except-auth-service.sh             # aperçu uniquement
+  scripts/cleanup-data-except-auth-service.sh --dry-run   # aperçu uniquement
+  scripts/cleanup-data-except-auth-service.sh --apply     # aperçu, puis confirmation explicite
 
-Le script supprime les données opérationnelles des bases ProgiTresor.
-Il conserve les comptes ADMIN, leurs droits, les rôles et les référentiels
-étudiants configurés. Les migrations Prisma sont toujours conservées.
+Le script nettoie les bases opérationnelles sans toucher à la base auth-service.
+Il conserve les référentiels étudiants configurés et les migrations Prisma.
 USAGE
 }
 
@@ -27,7 +26,6 @@ project_dir="$(cd -- "$script_dir/.." && pwd)"
 cd "$project_dir"
 
 services=(
-  "auth:progi-auth-service:progi_auth"
   "etudiant:progi-etudiant-service:progi_etudiant"
   "transaction:progi-transaction-service:progi_transaction"
   "order:progi-order-service:progi_order"
@@ -54,7 +52,9 @@ run_for_all_services() {
 echo "Aperçu du nettoyage demandé :"
 run_for_all_services plan
 cache_count="$(docker exec progi-redis redis-cli --scan --pattern 'etudiant:*' | wc -l | tr -d '[:space:]')"
+kpi_cache_count="$(docker exec progi-redis redis-cli --scan --pattern 'kpis:*' | wc -l | tr -d '[:space:]')"
 echo "Clés de cache étudiant à vider après le nettoyage : $cache_count"
+echo "Clés de cache KPI à invalider après le nettoyage : $kpi_cache_count"
 
 if [[ "$action" == "apply" ]]; then
   if [[ ! -t 0 ]]; then
@@ -69,5 +69,5 @@ if [[ "$action" == "apply" ]]; then
     exit 1
   fi
   run_for_all_services apply
-  docker exec progi-redis sh -c 'redis-cli --scan --pattern "etudiant:*" | while IFS= read -r key; do if [ -n "$key" ]; then redis-cli UNLINK "$key" >/dev/null; fi; done'
+  docker exec progi-redis sh -c 'for pattern in "etudiant:*" "kpis:*"; do redis-cli --scan --pattern "$pattern" | while IFS= read -r key; do if [ -n "$key" ]; then redis-cli UNLINK "$key" >/dev/null; fi; done; done'
 fi

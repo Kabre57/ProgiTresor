@@ -50,7 +50,7 @@ const app = express();
 app.set('trust proxy', 1);
 const PORT = config.PORT;
 const JWT_SECRET = config.JWT_SECRET;
-const CORS_ORIGIN = config.CORS_ORIGIN;
+const CORS_ORIGINS = config.CORS_ORIGIN.split(',').map((origin) => origin.trim()).filter(Boolean);
 
 interface GatewayUser extends JwtPayload {
   userId: number;
@@ -113,7 +113,7 @@ app.use(compression({
 
 // CORS — accept credentials (cookies)
 app.use(cors({
-  origin: CORS_ORIGIN,
+  origin: CORS_ORIGINS,
   credentials: true,
 }));
 
@@ -555,9 +555,14 @@ allRoutes.forEach((service) => {
         // Les services internes utilisent parfois `Access-Control-Allow-Origin: *`.
         // Le navigateur refuse ce header quand les cookies sont envoyés, donc le
         // gateway reprend la main sur les headers CORS exposés au frontend.
-        proxyRes: (proxyRes) => {
-          proxyRes.headers['access-control-allow-origin'] = CORS_ORIGIN;
-          proxyRes.headers['access-control-allow-credentials'] = 'true';
+        proxyRes: (proxyRes, req) => {
+          const requestOrigin = req.headers.origin;
+          delete proxyRes.headers['access-control-allow-origin'];
+          delete proxyRes.headers['access-control-allow-credentials'];
+          if (requestOrigin && CORS_ORIGINS.includes(requestOrigin)) {
+            proxyRes.headers['access-control-allow-origin'] = requestOrigin;
+            proxyRes.headers['access-control-allow-credentials'] = 'true';
+          }
 
           const vary = proxyRes.headers.vary;
           const varyValue = Array.isArray(vary) ? vary.join(', ') : vary;

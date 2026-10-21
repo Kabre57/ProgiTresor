@@ -36,7 +36,7 @@ services:
       - "127.0.0.1:4000:4000"   # Exposé uniquement en local → Nginx forward vers api.progitresor.online
     environment:
       - NODE_ENV=production
-      - CORS_ORIGIN=https://progitresor.online
+      - CORS_ORIGIN=https://progitresor.online,https://www.progitresor.online
 
   # --- Microservices ---
 
@@ -83,4 +83,6 @@ services:
 
 networks:
   default:
-    name: progitresor_network
+    # Reste identique au réseau créé par docker-compose.yml afin que les
+    # services redéployés seuls puissent joindre les dépendances déjà actives.
+    name: progitresor_default

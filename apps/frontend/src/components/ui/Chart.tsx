@@ -45,6 +45,10 @@ export function Chart({
   ...rest
 }: ChartProps) {
   const chartRef = useRef<HTMLDivElement>(null);
+  const normalizedXAxis = useMemo(
+    () => (Array.isArray(xAxis) ? xAxis.map((category) => String(category ?? '')) : []),
+    [xAxis]
+  );
 
   const chartDefaultOption = useMemo(() => {
     switch (type) {
@@ -66,9 +70,9 @@ export function Chart({
   const options = useMemo(() => {
     let opt = JSON.parse(JSON.stringify(chartDefaultOption));
 
-    if (notDonut.includes(type) && xAxis) {
+    if (notDonut.includes(type)) {
       if (!opt.xaxis) opt.xaxis = {};
-      opt.xaxis.categories = xAxis;
+      opt.xaxis.categories = normalizedXAxis;
     }
 
     if (type === 'donut') {
@@ -91,7 +95,7 @@ export function Chart({
     }
 
     return opt;
-  }, [chartDefaultOption, type, xAxis, donutTitle, donutText, customOptions]);
+  }, [chartDefaultOption, type, normalizedXAxis, donutTitle, donutText, customOptions]);
 
   const setLegendOffset = useCallback(() => {
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;

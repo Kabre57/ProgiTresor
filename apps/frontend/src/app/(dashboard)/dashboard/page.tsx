@@ -131,7 +131,7 @@ export default function DashboardPage() {
           data: data.map(item => item.montant)
         }
       ],
-      categories: data.map(item => item.libelle)
+      categories: data.map(item => item.libelle || 'Autre recette')
     };
   }, [kpisQuery.data]);
 

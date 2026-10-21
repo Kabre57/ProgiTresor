@@ -69,7 +69,7 @@ if [ ! -f "$ENV_FILE" ]; then
   REFRESH_TOKEN_SECRET=<openssl rand -base64 32>
   INTERNAL_API_SECRET=<openssl rand -base64 32>
   REDIS_URL=redis://redis:6379
-  CORS_ORIGIN=https://progitresor.online
+  CORS_ORIGIN=https://progitresor.online,https://www.progitresor.online
   POSTGRES_USER=postgres
   POSTGRES_PASSWORD=<openssl rand -hex 32>
   MINIO_ROOT_USER=ProgiAdmin2026

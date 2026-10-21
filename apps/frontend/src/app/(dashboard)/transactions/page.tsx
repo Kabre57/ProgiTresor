@@ -24,6 +24,22 @@ import { TransactionKpiCards } from '@/components/transactions/TransactionKpiCar
 
 type ExportFormat = 'xlsx' | 'xls';
 
+const getTransactionProductLabel = (row: any): string => {
+  const importedValue = String(row.libelleProduitBrut ?? '').trim();
+  const nomenclatureLabel = String(row.nomenclature?.libelle ?? '').trim();
+  const nomenclatureCode = String(row.nomenclature?.codeProduit ?? '').trim();
+
+  if (!importedValue) return nomenclatureLabel || '-';
+  if (
+    nomenclatureLabel &&
+    nomenclatureCode &&
+    importedValue.toLocaleUpperCase() === nomenclatureCode.toLocaleUpperCase()
+  ) {
+    return nomenclatureLabel;
+  }
+  return importedValue;
+};
+
 function TransactionsContent() {
   const searchParams = useSearchParams();
   const [page, setPage] = useState(1);
@@ -176,7 +192,7 @@ function TransactionsContent() {
     {
       key: 'libelleProduitBrut',
       header: 'Libellé produit',
-      render: (row: any) => String(row.libelleProduitBrut || '-')
+      render: (row: any) => getTransactionProductLabel(row)
     },
     { 
       key: 'statutTraitement', 

@@ -5,7 +5,6 @@ const service = process.argv[3];
 const expectedDatabase = process.argv[4];
 
 const databases = {
-  auth: 'progi_auth',
   etudiant: 'progi_etudiant',
   transaction: 'progi_transaction',
   order: 'progi_order',
@@ -15,11 +14,6 @@ const databases = {
 };
 
 const preservedByService = {
-  auth: [
-    'role', 'permission', 'role_permission',
-    'perimeter', 'perimeter_level',
-    'utilisateur', 'refresh_token', 'user_perimeter_level', 'permission_exclusion',
-  ],
   etudiant: [
     'antenne', 'filiere', 'statut_etudiant', 'promotion',
     'type_flux', 'type_recette', 'nomenclature_produit',
@@ -30,10 +24,6 @@ const preservedByService = {
   compta: [],
   analyse: [],
 };
-
-const authUserTables = new Set([
-  'utilisateur', 'refresh_token', 'user_perimeter_level', 'permission_exclusion',
-]);
 
 const quoteIdentifier = (value) => '"' + value.replaceAll('"', '""') + '"';
 
@@ -49,8 +39,7 @@ async function inspectDatabase(prisma) {
   );
   const allTables = tableRows.map((row) => row.table_name).filter((name) => name !== '_prisma_migrations');
   const preservedTables = new Set([...(preservedByService[service] || []), '_prisma_migrations']);
-  const specialAuthTables = service === 'auth' ? authUserTables : new Set();
-  const clearTables = allTables.filter((name) => !preservedTables.has(name) && !specialAuthTables.has(name));
+  const clearTables = allTables.filter((name) => !preservedTables.has(name));
   const counts = await Promise.all(allTables.map(async (table) => {
     const rows = await prisma.$queryRawUnsafe(
       'SELECT COUNT(*)::bigint AS count FROM public.' + quoteIdentifier(table),
@@ -58,24 +47,12 @@ async function inspectDatabase(prisma) {
     return { table, count: String(rows[0].count) };
   }));
 
-  let authUsers = null;
-  if (service === 'auth') {
-    const rows = await prisma.$queryRawUnsafe(
-      "SELECT COUNT(*) FILTER (WHERE r.code = 'ADMIN')::int AS admins, COUNT(*) FILTER (WHERE r.code <> 'ADMIN')::int AS other_users FROM public.utilisateur u JOIN public.role r ON r.id = u.role_id",
-    );
-    authUsers = rows[0];
-    if (Number(authUsers.admins) < 1) {
-      throw new Error('Aucun compte ADMIN trouvé ; nettoyage refusé.');
-    }
-  }
-
   const tableCounts = new Map(counts.map((row) => [row.table, BigInt(row.count)]));
   const plannedDeletes = clearTables
     .filter((table) => tableCounts.get(table) > 0n)
     .map((table) => ({ table, count: String(tableCounts.get(table)) }));
-  const retained = counts.filter(({ table }) => preservedTables.has(table) && !specialAuthTables.has(table));
-  const authSupportTables = counts.filter(({ table }) => specialAuthTables.has(table) && table !== 'utilisateur');
-  return { database, clearTables, plannedDeletes, retained, authSupportTables, authUsers };
+  const retained = counts.filter(({ table }) => preservedTables.has(table));
+  return { database, clearTables, plannedDeletes, retained };
 }
 
 async function main() {
@@ -103,9 +80,6 @@ async function main() {
         rowsToDelete: plan.plannedDeletes,
         tablesToClear: plan.clearTables,
         protectedTables: plan.retained,
-        adminAccessTables: plan.authSupportTables,
-        adminUsersPreserved: plan.authUsers?.admins ?? null,
-        nonAdminUsersToRemove: plan.authUsers?.other_users ?? null,
       }));
       return;
     }
@@ -115,22 +89,16 @@ async function main() {
         const tables = plan.clearTables.map((name) => 'public.' + quoteIdentifier(name)).join(', ');
         await tx.$executeRawUnsafe('TRUNCATE TABLE ' + tables);
       }
-      if (service === 'auth') {
-        await tx.$executeRawUnsafe(
-          "DELETE FROM public.utilisateur WHERE role_id NOT IN (SELECT id FROM public.role WHERE code = 'ADMIN')",
-        );
-      }
     });
 
     const after = await inspectDatabase(prisma);
-    if (after.plannedDeletes.length > 0 || (after.authUsers && Number(after.authUsers.other_users) > 0)) {
+    if (after.plannedDeletes.length > 0) {
       throw new Error('Des données ciblées restent présentes après le nettoyage.');
     }
     console.log(JSON.stringify({
       service,
       database: after.database,
       status: 'nettoye',
-      adminUsersPreserved: after.authUsers?.admins ?? null,
     }));
   } finally {
     await prisma.$disconnect();

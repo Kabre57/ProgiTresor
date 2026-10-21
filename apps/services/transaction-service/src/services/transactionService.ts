@@ -487,6 +487,14 @@ export const importTransactions = async (payload: ImportPayloadInput): Promise<{
         errors.push(`${item.refTresor}: nomenclature active non trouvée pour le libellé "${item.libelleProduitBrut}"`);
       }
 
+      const importedProductLabel = item.libelleProduitBrut?.trim() ?? null;
+      const nomenclatureCode = resolvedNomenclature?.codeProduit?.trim() ?? null;
+      const canonicalProductLabel =
+        importedProductLabel && nomenclatureCode &&
+        normalizeFinancialLabel(importedProductLabel) === normalizeFinancialLabel(nomenclatureCode)
+          ? resolvedNomenclature?.libelle?.trim() || importedProductLabel
+          : importedProductLabel;
+
       transactionsToCreate.push({
         refTresor: item.refTresor.trim(),
         dateHeure: new Date(item.dateHeure),
@@ -501,7 +509,7 @@ export const importTransactions = async (payload: ImportPayloadInput): Promise<{
         mois: item.mois ?? null,
         nomPayeurBrut: item.nomPayeurBrut?.trim() ?? null,
         contactPayeur: item.contactPayeur?.trim() ?? null,
-        libelleProduitBrut: item.libelleProduitBrut?.trim() ?? null,
+        libelleProduitBrut: canonicalProductLabel,
         filiere: filiere?.trim() ?? null,
         niveau: niveau?.trim() ?? null,
         versement: versement?.trim() ?? null,
