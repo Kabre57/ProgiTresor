@@ -12,10 +12,10 @@ until pg_isready -d "$DATABASE_URL" >/dev/null 2>&1; do
 done
 
 echo "Generating Prisma client..."
-npx prisma generate
+pnpm exec prisma generate
 
 echo "Synchronizing database schema..."
-npx prisma migrate deploy
+pnpm exec prisma migrate deploy
 
 echo "Starting compta-service..."
 exec node dist/apps/services/compta-service/src/index.js

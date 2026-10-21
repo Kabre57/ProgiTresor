@@ -5,6 +5,7 @@ const configSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().default(4000),
   JWT_SECRET: z.string().min(32),
+  CORS_ORIGIN: z.string().url().default('http://localhost:3030'),
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
   AUTH_SERVICE_URL: z.string().url().default('http://auth-service:5001'),
   ETUDIANT_SERVICE_URL: z.string().url().default('http://etudiant-service:5002'),

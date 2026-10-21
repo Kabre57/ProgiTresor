@@ -1,16 +1,17 @@
 # === STAGE 1: Dependencies ===
 FROM node:22-alpine AS deps
 WORKDIR /app
-COPY package*.json ./
-# Installer TOUTES les dépendances (dont devDependencies pour le build)
-RUN npm ci
+COPY package.json pnpm-lock.yaml ./
+RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
+RUN pnpm install --frozen-lockfile
 
 # === STAGE 2: Builder ===
 FROM node:22-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npm run build
+RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
+RUN pnpm run build
 
 # === STAGE 3: Runner ===
 FROM node:22-alpine AS runner

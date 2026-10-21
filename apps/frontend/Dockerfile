@@ -1,9 +1,9 @@
 # === STAGE 1: Dependencies ===
 FROM node:22-slim AS deps
 WORKDIR /app
-COPY package.json package-lock.json ./
-# Utiliser --legacy-peer-deps pour résoudre le conflit react-datepicker
-RUN npm ci --legacy-peer-deps
+COPY package.json pnpm-lock.yaml ./
+RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
+RUN pnpm install --frozen-lockfile
 
 # === STAGE 2: Builder ===
 FROM node:22-slim AS builder
@@ -14,7 +14,8 @@ COPY . .
 ARG NEXT_PUBLIC_API_GATEWAY=http://localhost:4000/api
 ENV NEXT_PUBLIC_API_GATEWAY=$NEXT_PUBLIC_API_GATEWAY
 
-RUN npm run build
+RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
+RUN pnpm run build
 
 # === STAGE 3: Runner ===
 FROM node:22-slim AS runner
@@ -41,4 +42,4 @@ EXPOSE 3030
 ENV PORT=3030
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["node", "node_modules/.bin/next", "start", "-p", "3030"]
+CMD ["node", "node_modules/next/dist/bin/next", "start", "-p", "3030"]

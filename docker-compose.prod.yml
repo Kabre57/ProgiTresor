@@ -10,25 +10,33 @@ services:
 
   postgres:
     restart: unless-stopped
+    # Pas d'exposition publique de PostgreSQL sur le VPS partagé.
+    ports: !override
+      - "127.0.0.1:5435:5432"
 
   redis:
     restart: unless-stopped
+    # Pas d'exposition publique de Redis sur le VPS partagé.
+    ports: !override
+      - "127.0.0.1:6381:6379"
 
   minio:
     restart: unless-stopped
-    # MinIO API (9000) non exposé publiquement — accès via Nginx storage.progitresor.online → 9001
-    ports:
-      - "127.0.0.1:9000:9000"   # Écoute uniquement en local (MinIO S3 API interne)
-      - "127.0.0.1:9001:9001"   # Console admin (accessible via Nginx)
+    # Remplace — et non ajoute à — les ports définis pour le développement.
+    # Évite les collisions avec les autres applications du VPS.
+    ports: !override
+      - "127.0.0.1:9100:9000"   # Écoute uniquement en local (MinIO S3 API interne)
+      - "127.0.0.1:9101:9001"   # Console admin (accessible via Nginx)
 
   # --- API Gateway ---
 
   gateway:
     restart: unless-stopped
-    ports:
+    ports: !override
       - "127.0.0.1:4000:4000"   # Exposé uniquement en local → Nginx forward vers api.progitresor.online
     environment:
       - NODE_ENV=production
+      - CORS_ORIGIN=https://progitresor.online
 
   # --- Microservices ---
 
@@ -66,7 +74,7 @@ services:
         # URL publique de l'API — passée au build Next.js
         NEXT_PUBLIC_API_GATEWAY: https://progitresor.online/api
     restart: unless-stopped
-    ports:
+    ports: !override
       - "127.0.0.1:3030:3030"   # Exposé uniquement en local → Nginx forward vers progitresor.online
     environment:
       - PORT=3030

@@ -1,5 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { isAxiosError } from 'axios';
 import { etudiantApi, type ReferentialEndpoint, type EtudiantListParams } from '@/lib/api/etudiantApi';
+import { isStudentUser } from '@/lib/auth/roles';
+import { useAuthStore } from '@/lib/store/useAuthStore';
 import type { EtudiantFormInput } from '@/types/etudiant.types';
 
 export const etudiantQueryKeys = {
@@ -112,11 +115,18 @@ export const useUpdateEtudiant = () => {
   });
 };
 
-export const useEtudiantMe = () =>
-  useQuery({
-    queryKey: ['etudiant', 'me'],
+export const useEtudiantMe = () => {
+  const user = useAuthStore((state) => state.user);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+
+  return useQuery({
+    queryKey: ['etudiant', 'me', user?.id],
     queryFn: () => etudiantApi.getMe(),
+    enabled: isAuthenticated && isStudentUser(user),
+    retry: (failureCount, error) =>
+      failureCount < 3 && !(isAxiosError(error) && error.response?.status === 404),
   });
+};
 
 export const useMapTresorPay = () => {
   const queryClient = useQueryClient();

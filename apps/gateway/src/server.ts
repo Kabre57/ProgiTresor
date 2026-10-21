@@ -44,9 +44,12 @@ const logger = pino({
 });
 
 const app = express();
+// Nginx est le seul proxy public en production. Cela permet à Express et au
+// rate limiter de déterminer correctement l'adresse IP du client via XFF.
+app.set('trust proxy', 1);
 const PORT = config.PORT;
 const JWT_SECRET = config.JWT_SECRET;
-const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:3030';
+const CORS_ORIGIN = config.CORS_ORIGIN;
 
 interface GatewayUser extends JwtPayload {
   userId: number;
@@ -291,13 +294,17 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'gateway' });
 });
 
+app.get('/api/health', (_req, res) => {
+  res.json({ status: 'ok', service: 'gateway' });
+});
+
 // ============================================================
 // 6.5 COOKIE-BASED AUTH ENDPOINTS
 // ============================================================
 
 const COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: false,
+  secure: config.NODE_ENV === 'production',
   sameSite: 'lax' as const,
   path: '/',
 };

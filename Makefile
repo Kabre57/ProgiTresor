@@ -1,3 +1,9 @@
+COMPOSE = docker compose
+PROD_COMPOSE = $(COMPOSE) -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.production
+
+.PHONY: build up down logs clean seed-dev prod-config prod-build prod-up prod-down prod-logs prod-ps
+
+# Développement local uniquement : les ports du fichier de base sont publiés.
 build:
 	docker compose build
 
@@ -13,26 +19,45 @@ logs:
 clean:
 	docker compose down -v
 
-seed:
-	docker exec -it progi-auth-service npx prisma db seed
-	docker exec -it progi-etudiant-service npx prisma db seed
-	docker exec -it progi-transaction-service npx prisma db seed
-	docker exec -it progi-order-service npx prisma db seed
+seed-dev:
+	docker exec -it progi-auth-service pnpm exec prisma db seed
+	docker exec -it progi-etudiant-service pnpm exec prisma db seed
+	docker exec -it progi-transaction-service pnpm exec prisma db seed
+	docker exec -it progi-order-service pnpm exec prisma db seed
+
+# Production : utilise les surcharges réseau et les secrets de .env.production.
+prod-config:
+	$(PROD_COMPOSE) config --quiet
+
+prod-build: prod-config
+	$(PROD_COMPOSE) build
+
+prod-up: prod-config
+	$(PROD_COMPOSE) up -d
+
+prod-down:
+	$(PROD_COMPOSE) down
+
+prod-logs:
+	$(PROD_COMPOSE) logs -f
+
+prod-ps:
+	$(PROD_COMPOSE) ps
 
 sync-schema:
-	cd apps/services/auth-service && npx prisma migrate dev --name sync_schema
-	cd apps/services/etudiant-service && npx prisma migrate dev --name sync_schema
-	cd apps/services/transaction-service && npx prisma migrate dev --name sync_schema
-	cd apps/services/order-service && npx prisma migrate dev --name sync_schema
-	cd apps/services/analyse-service && npx prisma migrate dev --name sync_schema
-	cd apps/services/transaction-service && npm run db:triggers
+	cd apps/services/auth-service && pnpm exec prisma migrate dev --name sync_schema
+	cd apps/services/etudiant-service && pnpm exec prisma migrate dev --name sync_schema
+	cd apps/services/transaction-service && pnpm exec prisma migrate dev --name sync_schema
+	cd apps/services/order-service && pnpm exec prisma migrate dev --name sync_schema
+	cd apps/services/analyse-service && pnpm exec prisma migrate dev --name sync_schema
+	cd apps/services/transaction-service && pnpm run db:triggers
 
 test:
-	docker exec -it progi-auth-service npm test
-	docker exec -it progi-etudiant-service npm test
-	docker exec -it progi-transaction-service npm test
-	docker exec -it progi-order-service npm test
-	docker exec -it progi-analyse-service npm test
+	docker exec -it progi-auth-service pnpm test
+	docker exec -it progi-etudiant-service pnpm test
+	docker exec -it progi-transaction-service pnpm test
+	docker exec -it progi-order-service pnpm test
+	docker exec -it progi-analyse-service pnpm test
 
 docs:
 	@echo "API Documentation available at:"
@@ -60,11 +85,11 @@ metrics:
 
 generate-docs:
 	@echo "Generating OpenAPI specs inside containers..."
-	@docker exec -t progi-auth-service npm run generate:docs || true
-	@docker exec -t progi-etudiant-service npm run generate:docs || true
-	@docker exec -t progi-transaction-service npm run generate:docs || true
-	@docker exec -t progi-order-service npm run generate:docs || true
-	@docker exec -t progi-analyse-service npm run generate:docs || true
+	@docker exec -t progi-auth-service pnpm run generate:docs || true
+	@docker exec -t progi-etudiant-service pnpm run generate:docs || true
+	@docker exec -t progi-transaction-service pnpm run generate:docs || true
+	@docker exec -t progi-order-service pnpm run generate:docs || true
+	@docker exec -t progi-analyse-service pnpm run generate:docs || true
 	@echo "Copying specs to host..."
 	@docker cp progi-auth-service:/app/openapi.json ./apps/services/auth-service/openapi.json || true
 	@docker cp progi-etudiant-service:/app/openapi.json ./apps/services/etudiant-service/openapi.json || true

@@ -330,7 +330,7 @@ export const validateAndTransmitMultiple = async (
     },
   });
 
-  const results: { code: string; success: boolean; message?: string; outboxQueued?: boolean; borderauStatus?: 'QUEUED' | 'UNKNOWN' }[] = [];
+  const results: { code: string; success: boolean; message?: string; outboxQueued?: boolean; bordereauStatus?: 'QUEUED' | 'UNKNOWN' }[] = [];
   for (const code of codes) {
     try {
       const op = await orderRepository.findOtByCode(code);
