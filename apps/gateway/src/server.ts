@@ -303,11 +303,13 @@ app.get('/api/health', (_req, res) => {
 // 6.5 COOKIE-BASED AUTH ENDPOINTS
 // ============================================================
 
+const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN || undefined;
 const COOKIE_OPTIONS = {
   httpOnly: true,
   secure: config.NODE_ENV === 'production',
   sameSite: 'lax' as const,
   path: '/',
+  ...(COOKIE_DOMAIN ? { domain: COOKIE_DOMAIN } : {}),
 };
 
 // Body parser for JSON (needed for auth endpoints)
@@ -329,6 +331,11 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     const { token, refreshToken, user } = response.data;
+
+    // Retirer d'anciens cookies limités à l'hôte avant d'écrire les cookies
+    // partagés entre le domaine principal et son sous-domaine www.
+    res.clearCookie('pt_access_token', { path: '/' });
+    res.clearCookie('pt_refresh_token', { path: '/' });
 
     // Set HttpOnly cookies
     res.cookie('pt_access_token', token, {
@@ -395,6 +402,10 @@ app.post('/api/auth/logout', async (req, res) => {
   } finally {
     res.clearCookie('pt_access_token', { path: '/' });
     res.clearCookie('pt_refresh_token', { path: '/' });
+    if (COOKIE_DOMAIN) {
+      res.clearCookie('pt_access_token', { path: '/', domain: COOKIE_DOMAIN });
+      res.clearCookie('pt_refresh_token', { path: '/', domain: COOKIE_DOMAIN });
+    }
     res.json({ success: true });
   }
 });

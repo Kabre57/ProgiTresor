@@ -37,6 +37,7 @@ services:
     environment:
       - NODE_ENV=production
       - CORS_ORIGIN=https://progitresor.online,https://www.progitresor.online
+      - COOKIE_DOMAIN=.progitresor.online
 
   # --- Microservices ---
 
