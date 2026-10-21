@@ -184,6 +184,7 @@ export default function DashboardPage() {
     try {
       setExporting(true);
       const blob = await transactionApi.export({
+        format: 'xlsx',
         dateDebut: dateDebut || undefined,
         dateFin: dateFin || undefined,
         antenneId
@@ -191,7 +192,7 @@ export default function DashboardPage() {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `transactions_export_${Date.now()}.csv`);
+      link.setAttribute('download', `transactions_export_${Date.now()}.xlsx`);
       document.body.appendChild(link);
       link.click();
       link.parentNode?.removeChild(link);
@@ -240,7 +241,7 @@ export default function DashboardPage() {
                 disabled={exporting}
                 icon={<PiCloudArrowDownDuotone className="text-xl" />}
               >
-                Exporter CSV
+                Exporter Excel
               </Button>
               <Tag tone="success" prefix={true}>Connecté</Tag>
             </div>

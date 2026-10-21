@@ -18,6 +18,14 @@ export const etudiantImportRoute = {
   serviceBasePath: '/import'
 };
 
+export const etudiantReferentialImportRoute = {
+  path: '/api/etudiant/import-referential',
+  target: config.ETUDIANT_SERVICE_URL,
+  secure: true,
+  roles: ['Administrateur'],
+  serviceBasePath: '/import-referential'
+};
+
 // Route pour associer un matricule Trésor Pay (admin ou étudiant)
 export const etudiantMapRoute = {
   path: '/api/etudiant/tresor-pay/map',

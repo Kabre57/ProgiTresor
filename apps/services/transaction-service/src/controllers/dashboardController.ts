@@ -5,36 +5,11 @@ import { buildTransactionWhereClause } from '../utils/filterBuilder';
 import { Prisma, Transaction } from '@prisma/client/index';
 import { buildKpiCacheKey, getCachedKpis, setCachedKpis } from '../services/kpiCacheService';
 import { buildWorkbook, getWorkbookContentType, type WorkbookFormat, type WorkbookSheet } from '../services/excelExportService';
-import { Transform } from 'stream';
-import { once } from 'events';
 import { fetchEtudiantJson } from '../utils/etudiantServiceClient';
 import { buildFluxMeta, type FluxMeta } from '../utils/typeFlux';
 
-const escapeCsvValue = (value: string) => {
-  if (value.includes(',') || value.includes('"') || value.includes('\n')) {
-    return `"${value.replace(/"/g, '""')}"`;
-  }
-  return value;
-};
-
-const createCsvTransform = () =>
-  new Transform({
-    writableObjectMode: true,
-    transform(row: string[], _encoding, callback) {
-      callback(null, `${row.map(escapeCsvValue).join(',')}\n`);
-    },
-  });
-
-const writeCsvRow = async (stream: Transform, row: string[]) => {
-  if (!stream.write(row)) {
-    await once(stream, 'drain');
-  }
-};
-
-const normalizeExportFormat = (format: unknown): 'csv' | WorkbookFormat => {
-  const value = String(format ?? 'csv').toLowerCase();
-  return value === 'xlsx' || value === 'xls' ? value : 'csv';
-};
+const normalizeExportFormat = (format: unknown): WorkbookFormat =>
+  String(format ?? 'xlsx').toLowerCase() === 'xls' ? 'xls' : 'xlsx';
 
 type SyntheseScope = 'budget' | 'hors-budget' | 'both';
 
@@ -293,7 +268,7 @@ export const getKpis = async (req: Request, res: Response, next: NextFunction): 
 };
 
 /**
- * Exporte les transactions sous forme de fichier CSV.
+ * Exporte les transactions sous forme de classeur Excel.
  */
 export const exportTransactions = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
@@ -351,17 +326,6 @@ export const exportTransactions = async (req: Request, res: Response, next: Next
     ];
 
     const excelRows: Array<Array<string | number>> = [];
-    let csvStream: Transform | undefined;
-
-    if (format === 'csv') {
-      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-      res.setHeader('Content-Disposition', `attachment; filename=transactions_export_${Date.now()}.csv`);
-      res.write('\uFEFF');
-      csvStream = createCsvTransform();
-      csvStream.pipe(res);
-      await writeCsvRow(csvStream, headers);
-    }
-
     let cursor: bigint | undefined = undefined;
     const batchSize = 5000;
 
@@ -433,32 +397,21 @@ export const exportTransactions = async (req: Request, res: Response, next: Next
           tx.statutTraitement
         ];
 
-        if (csvStream) {
-          await writeCsvRow(csvStream, row.map((value) => String(value ?? '')));
-        } else {
-          excelRows.push(row);
-        }
+        excelRows.push(row);
       }
 
       cursor = transactions[transactions.length - 1].id;
     }
 
-    if (csvStream) {
-      csvStream.end();
-      return;
-    }
-
-    if (format !== 'csv') {
-      sendWorkbook(res, 'transactions_export', format, [
-        {
-          name: 'Transactions',
-          headers,
-          rows: excelRows,
-          currencyColumns: [2],
-          widths: [22, 22, 14, 34, 18, 22, 34, 18, 22, 28, 34, 18],
-        },
-      ]);
-    }
+    sendWorkbook(res, 'transactions_export', format, [
+      {
+        name: 'Transactions',
+        headers,
+        rows: excelRows,
+        currencyColumns: [2],
+        widths: [22, 22, 14, 34, 18, 22, 34, 18, 22, 28, 34, 18],
+      },
+    ]);
   } catch (err) {
     next(err);
   }
@@ -623,7 +576,7 @@ export const getGroupedByRecette = async (req: Request, res: Response, next: Nex
 };
 
 /**
- * Exporte la synthèse des recettes sous forme de fichier CSV.
+ * Exporte la synthèse des recettes sous forme de classeur Excel.
  */
 export const exportSynthese = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
@@ -738,7 +691,6 @@ export const exportSynthese = async (req: Request, res: Response, next: NextFunc
     const budgetHeaders = ['Type de recette', 'Nomenclature', 'Budget'];
     const horsBudgetHeaders = ['Type de recette', 'Nomenclature', 'Hors-Budget'];
     const nonClassifieHeaders = ['Type de recette', 'Nomenclature', 'Non classifié'];
-    const allHeaders = ['Type de recette', 'Nomenclature', 'Budget', 'Hors-Budget', 'Non classifié', 'Total'];
     const budgetRows = results
       .filter((r) => r.montantBudget > 0)
       .map((r) => [r.typeRecette, r.libelleStandard, r.montantBudget]);
@@ -748,37 +700,6 @@ export const exportSynthese = async (req: Request, res: Response, next: NextFunc
     const nonClassifieRows = results
       .filter((r) => r.montantNonClassifie > 0)
       .map((r) => [r.typeRecette, r.libelleStandard, r.montantNonClassifie]);
-
-    if (format === 'csv') {
-      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-      res.setHeader('Content-Disposition', `attachment; filename=synthese_recettes_export_${Date.now()}.csv`);
-      res.write('\uFEFF');
-      const csvStream = createCsvTransform();
-      csvStream.pipe(res);
-
-      if (scope === 'budget') {
-        await writeCsvRow(csvStream, budgetHeaders);
-        for (const row of budgetRows) await writeCsvRow(csvStream, row.map((value) => String(value ?? '')));
-      } else if (scope === 'hors-budget') {
-        await writeCsvRow(csvStream, horsBudgetHeaders);
-        for (const row of horsBudgetRows) await writeCsvRow(csvStream, row.map((value) => String(value ?? '')));
-      } else {
-        await writeCsvRow(csvStream, allHeaders);
-        for (const r of results) {
-          await writeCsvRow(csvStream, [
-            r.typeRecette,
-            r.libelleStandard,
-            String(r.montantBudget),
-            String(r.montantHorsBudget),
-            String(r.montantNonClassifie),
-            String(r.montantTotal),
-          ]);
-        }
-      }
-
-      csvStream.end();
-      return;
-    }
 
     const sheets: WorkbookSheet[] = [];
     if (scope === 'budget' || scope === 'both') {

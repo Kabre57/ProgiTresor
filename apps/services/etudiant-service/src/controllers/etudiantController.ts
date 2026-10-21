@@ -441,8 +441,9 @@ export const getEtudiantStatsGroups = async (req: Request, res: Response, next: 
 
 export const getStudentFinancialSummary = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const identifier = req.params.identifier.trim();
-    const result = await etudiantService.getStudentFinancialSummary(identifier);
+    const identifier = req.params.identifier.trim().toUpperCase();
+    const matriculeOnly = String(req.headers['x-user-role']).toUpperCase() === 'ETUDIANT';
+    const result = await etudiantService.getStudentFinancialSummary(identifier, matriculeOnly);
     res.json(result);
   } catch (e) {
     next(e);
@@ -451,8 +452,9 @@ export const getStudentFinancialSummary = async (req: Request, res: Response, ne
 
 export const generateStudentAttestation = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const identifier = req.params.identifier.trim();
-    const pdfBuffer = await etudiantService.generateStudentAttestation(identifier);
+    const identifier = req.params.identifier.trim().toUpperCase();
+    const matriculeOnly = String(req.headers['x-user-role']).toUpperCase() === 'ETUDIANT';
+    const pdfBuffer = await etudiantService.generateStudentAttestation(identifier, matriculeOnly);
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="attestation_${identifier}.pdf"`);
     res.send(pdfBuffer);

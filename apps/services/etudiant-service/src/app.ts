@@ -6,6 +6,7 @@ import swaggerUi from 'swagger-ui-express';
 import multer from 'multer';
 import { errorHandler } from './middlewares/errorHandler';
 import { extractUserFromHeaders, authorizeRoles, validateInternalSecret } from './middlewares/authMiddleware';
+import { restrictStudentAccess } from './middlewares/studentAccess';
 import { importEtudiants, importReferential } from './controllers/importController';
 import {
   getEtudiantByMatricule,
@@ -182,6 +183,7 @@ app.get('/health', healthCheck);
 app.get('/metrics', getMetrics);
 
 app.use(validateInternalSecret);
+app.use(restrictStudentAccess);
 
 // ============================================================
 // Routes – System

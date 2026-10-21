@@ -1,5 +1,7 @@
 'use client';
 
+import { normalizeTypeFluxCode } from '@/lib/utils/typeFlux';
+
 import { Download, RefreshCw, BarChart2, PieChart, Search, X } from 'lucide-react';
 import { PiCloudArrowDownDuotone, PiXDuotone, PiArrowsCounterClockwiseDuotone } from 'react-icons/pi';
 import { useState, useMemo, useEffect } from 'react';
@@ -18,7 +20,7 @@ import { transactionApi } from '@/lib/api/transactionApi';
 import { SynthesisDetailsModal } from '@/components/synthesis/SynthesisDetailsModal';
 import { RecettesFilters, type RecettesFiltersState } from '@/components/dashboard/RecettesFilters';
 
-type ExportFormat = 'csv' | 'xlsx' | 'xls';
+type ExportFormat = 'xlsx' | 'xls';
 type SyntheseScope = 'both' | 'budget' | 'hors-budget';
 
 export interface RecetteRow {
@@ -92,11 +94,11 @@ const initialFilters: RecettesFiltersState = {
   const recipes = (recettesQuery.data as RecetteRow[]) ?? [];
 
   const budgetRecipes = useMemo(() => {
-    return recipes.filter(r => r.typeFluxCode === 'BUDGET' || r.montantBudget > 0);
+    return recipes.filter(r => normalizeTypeFluxCode(r.typeFluxCode) === 'BUDGET' || r.montantBudget > 0);
   }, [recipes]);
 
   const horsBudgetRecipes = useMemo(() => {
-    return recipes.filter(r => r.typeFluxCode === 'HORS_BUDGET' || r.montantHorsBudget > 0);
+    return recipes.filter(r => normalizeTypeFluxCode(r.typeFluxCode) === 'HORS_BUDGET' || r.montantHorsBudget > 0);
   }, [recipes]);
 
   const paginatedBudgetRecipes = useMemo(() => {
@@ -429,7 +431,6 @@ const initialFilters: RecettesFiltersState = {
             >
               <Dropdown.Item onClick={() => handleExport('xlsx')}>Excel moderne (.xlsx)</Dropdown.Item>
               <Dropdown.Item onClick={() => handleExport('xls')}>Excel ancien (.xls)</Dropdown.Item>
-              <Dropdown.Item onClick={() => handleExport('csv')}>CSV (.csv)</Dropdown.Item>
             </Dropdown>
           </div>
         }

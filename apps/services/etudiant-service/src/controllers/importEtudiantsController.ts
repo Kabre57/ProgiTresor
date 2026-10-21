@@ -1,3 +1,5 @@
+import { findImportColumn, findImportReferences, normalizeImportLabel } from '../../../../../shared/utils/importReferences';
+import { isExcelUpload } from '../../../../../shared/utils/excelFiles';
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../utils/prisma';
 import logger from '../utils/logger';
@@ -11,6 +13,11 @@ export const importEtudiants = async (req: Request, res: Response, next: NextFun
       return;
     }
 
+    if (!isExcelUpload((req as any).file)) {
+      res.status(400).json({ error: 'Sélectionnez un fichier Excel valide (.xlsx ou .xls).' });
+      return;
+    }
+
     const workbook = XLSX.read((req as any).file.buffer, { type: 'buffer' });
     const firstSheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[firstSheetName];
@@ -21,27 +28,21 @@ export const importEtudiants = async (req: Request, res: Response, next: NextFun
       return;
     }
 
-    const firstRowKeys = Object.keys(rows[0]);
-    const findKey = (name: string) => {
-      const cleanName = name.replace(/[\s_-]/g, '').toLowerCase();
-      return firstRowKeys.find(k => k.trim().replace(/[\s_-]/g, '').toLowerCase() === cleanName);
-    };
-
+    const findKey = (...names: string[]) => findImportColumn(Object.keys(rows[0]), ...names);
     const matriculeKey = findKey('matricule');
     const nomKey = findKey('nom');
-    const prenomKey = findKey('prenom');
-    const nomCompletKey = findKey('nom complet') || findKey('nomcomplet');
-    const antenneIdKey = findKey('antenneid') || findKey('antenne') || findKey('antenne infas');
-    const filiereIdKey = findKey('filiereid') || findKey('filiere') || findKey('filierecode') || findKey('niveau') || findKey('niveauid') || findKey('niveaucode');
-    const statutIdKey = findKey('statutid') || findKey('statut') || findKey('statutcode');
-    const matriculeTresorPayKey = findKey('matriculetresorpay') || findKey('matricule tresor pay') || findKey('tresorpay');
-    const promotionNomKey = findKey('promotionnom') || findKey('promotion');
-    const promotionIdKey = findKey('promotionid');
+    const prenomKey = findKey('prénom');
+    const nomCompletKey = findKey('nom complet');
+    const antenneKey = findKey('antenne', 'code antenne', 'nom antenne', 'antenne infas', 'antenneId');
+    const filiereKey = findKey('filière', 'code filière', 'libellé filière', 'filiereId');
+    const statutKey = findKey('statut', 'code statut', 'libellé statut', 'statutId');
+    const promotionKey = findKey('promotion', 'nom promotion', 'promotionNom', 'promotionId');
+    const niveauKey = findKey('niveau', 'niveau promotion', 'cycle');
+    const matriculeTresorPayKey = findKey('matricule Trésor Pay', 'tresorpay');
 
-    // We only strictly require Matricule and either (Nom/Prenom) or Nom Complet
-    if (!matriculeKey || (!nomCompletKey && (!nomKey || !prenomKey))) {
+    if (!matriculeKey || (!nomCompletKey && (!nomKey || !prenomKey)) || !antenneKey || !filiereKey || !statutKey || !promotionKey) {
       res.status(400).json({
-        error: 'Colonnes requises manquantes. Le fichier doit au moins contenir la colonne : matricule, et soit nom/prenom soit nom complet.'
+        error: 'Colonnes requises : Matricule, Nom, Prénom (ou Nom complet), Antenne, Filière, Statut et Promotion. Ajouter Niveau si le nom de promotion existe pour plusieurs niveaux.',
       });
       return;
     }
@@ -50,41 +51,8 @@ export const importEtudiants = async (req: Request, res: Response, next: NextFun
       prisma.antenne.findMany({ select: { id: true, code: true, nom: true } }),
       prisma.filiere.findMany({ select: { id: true, code: true, libelle: true, abreviation: true } }),
       prisma.statutEtudiant.findMany({ select: { id: true, code: true, libelle: true } }),
-      prisma.promotion.findMany({ select: { id: true, nom: true } })
+      prisma.promotion.findMany({ select: { id: true, nom: true, niveau: true } })
     ]);
-
-    // Build lookup maps
-    const antenneMap = new Map<string, number>();
-    antennes.forEach(a => {
-      antenneMap.set(a.code.toLowerCase(), a.id);
-      antenneMap.set(a.nom.toLowerCase(), a.id);
-      antenneMap.set(a.nom.toLowerCase().replace(/\s+/g, ''), a.id);
-    });
-
-    const filiereMap = new Map<string, number>();
-    filieres.forEach(f => {
-      filiereMap.set(f.code.toLowerCase(), f.id);
-      filiereMap.set(f.libelle.toLowerCase(), f.id);
-      filiereMap.set(f.abreviation.toLowerCase(), f.id);
-    });
-
-    const statutMap = new Map<string, number>();
-    statuts.forEach(s => {
-      statutMap.set(s.code.toLowerCase(), s.id);
-      statutMap.set(s.libelle.toLowerCase(), s.id);
-    });
-
-    const promotionByIdSet = new Set(promotions.map(p => p.id));
-    const promotionByNameMap = new Map<string, number>();
-    promotions.forEach((p) => {
-      promotionByNameMap.set(p.nom.toLowerCase(), p.id);
-    });
-
-    // Default Fallbacks
-    const defaultAntenneId = antennes[0]?.id || 1;
-    const defaultFiliereId = filieres[0]?.id || 1;
-    const defaultStatutId = statuts.find(s => s.code.toUpperCase() === 'PUBLIC')?.id || statuts[0]?.id || 1;
-    const defaultPromotion = promotions[0] || { id: 1, nom: 'Première année' };
 
     const etudiantToCreate: any[] = [];
     const errors: string[] = [];
@@ -92,111 +60,58 @@ export const importEtudiants = async (req: Request, res: Response, next: NextFun
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
-      const matricule = rowValue(row, matriculeKey);
-      
-      let nom = '';
-      let prenom = '';
-
-      if (nomKey || prenomKey) {
-        nom = rowValue(row, nomKey);
-        prenom = rowValue(row, prenomKey);
-      } else if (nomCompletKey) {
-        const fullName = rowValue(row, nomCompletKey);
-        const parts = fullName.trim().split(/\s+/);
-        nom = parts[0] || '';
-        prenom = parts.slice(1).join(' ') || 'Élève';
+      const rowNum = i + 2;
+      const matricule = rowValue(row, matriculeKey).toUpperCase();
+      let nom = rowValue(row, nomKey);
+      let prenom = rowValue(row, prenomKey);
+      if (!nom && !prenom && nomCompletKey) {
+        const [familyName, ...givenNames] = rowValue(row, nomCompletKey).split(/\s+/);
+        nom = familyName || '';
+        prenom = givenNames.join(' ');
       }
-
-      // Resolve Antenne
-      let antenneId = defaultAntenneId;
-      if (antenneIdKey) {
-        const rawAnt = rowValue(row, antenneIdKey);
-        const parsedVal = parseInt(rawAnt, 10);
-        if (!isNaN(parsedVal)) {
-          antenneId = parsedVal;
-        } else {
-          const clean = rawAnt.toLowerCase().trim();
-          antenneId = antenneMap.get(clean) || 0;
-          if (!antenneId) {
-            const found = antennes.find(a => 
-              clean.includes(a.nom.toLowerCase()) || 
-              a.nom.toLowerCase().includes(clean) ||
-              clean.includes(a.code.toLowerCase())
-            );
-            antenneId = found ? found.id : defaultAntenneId;
-          }
-        }
+      if (!matricule || !nom || !prenom) {
+        errors.push(`Ligne ${rowNum} : Matricule, nom et prénom obligatoires.`);
+        continue;
       }
+      const errorCount = errors.length;
+      const resolve = <T extends { id: number }>(
+        field: string, key: string | undefined, items: T[],
+        codes: (item: T) => unknown[], labels: (item: T) => unknown[],
+      ): T | undefined => {
+        const value = rowValue(row, key);
+        const legacyIdColumn = key && /id$/i.test(key);
+        const matches = legacyIdColumn && /^\d+$/.test(value)
+          ? items.filter(item => item.id === Number(value))
+          : findImportReferences(value, items, codes, labels);
+        if (matches.length === 1) return matches[0];
+        errors.push(!value
+          ? `Ligne ${rowNum} : ${field} manquant.`
+          : matches.length > 1
+          ? `Ligne ${rowNum} : ${field} « ${value} » ambigu ; préciser son code ou, pour une promotion, la colonne Niveau.`
+          : `Ligne ${rowNum} : ${field} « ${value} » introuvable dans les référentiels.`);
+        return undefined;
+      };
+      const antenne = resolve('Antenne', antenneKey, antennes, a => [a.code], a => [a.nom]);
+      const filiere = resolve('Filière', filiereKey, filieres, f => [f.code, f.abreviation], f => [f.libelle]);
+      const statut = resolve('Statut', statutKey, statuts, s => [s.code], s => [s.libelle]);
+      const niveau = rowValue(row, niveauKey);
+      const availablePromotions = niveau
+        ? promotions.filter(p => normalizeImportLabel(p.niveau) === normalizeImportLabel(niveau))
+        : promotions;
+      const promotion = resolve('Promotion', promotionKey, availablePromotions, () => [], p => [p.nom]);
+      if (errors.length > errorCount || !antenne || !filiere || !statut || !promotion) continue;
 
-      // Resolve Filiere
-      let filiereId = defaultFiliereId;
-      if (filiereIdKey) {
-        const rawFil = rowValue(row, filiereIdKey);
-        const parsedVal = parseInt(rawFil, 10);
-        if (!isNaN(parsedVal)) {
-          filiereId = parsedVal;
-        } else {
-          const clean = rawFil.toLowerCase().trim();
-          filiereId = filiereMap.get(clean) || defaultFiliereId;
-        }
-      }
-
-      // Resolve Statut
-      let statutId = defaultStatutId;
-      if (statutIdKey) {
-        const rawStat = rowValue(row, statutIdKey);
-        const parsedVal = parseInt(rawStat, 10);
-        if (!isNaN(parsedVal)) {
-          statutId = parsedVal;
-        } else {
-          const clean = rawStat.toLowerCase().trim();
-          statutId = statutMap.get(clean) || defaultStatutId;
-        }
-      }
-
-      // Resolve Promotion
-      const promotionNomVal = promotionNomKey ? rowValue(row, promotionNomKey) : undefined;
-      const promotionIdVal = promotionIdKey ? parseInt(rowValue(row, promotionIdKey), 10) : NaN;
-
-      let promotionId = defaultPromotion.id;
-      let promotionString = defaultPromotion.nom;
-
-      if (!isNaN(promotionIdVal) && promotionByIdSet.has(promotionIdVal)) {
-        promotionId = promotionIdVal;
-        const promo = promotions.find(p => p.id === promotionId);
-        promotionString = promo ? promo.nom : defaultPromotion.nom;
-      } else if (promotionNomVal) {
-        const resolvedId = promotionByNameMap.get(promotionNomVal.toLowerCase());
-        if (resolvedId) {
-          promotionId = resolvedId;
-          const promo = promotions.find(p => p.id === promotionId);
-          promotionString = promo ? promo.nom : defaultPromotion.nom;
-        }
-      }
-
-      // Resolve Matricule Trésor Pay
-      let matriculeTresorPay = matriculeTresorPayKey ? rowValue(row, matriculeTresorPayKey).trim() : '';
-      if (!matriculeTresorPay || seenMtp.has(matriculeTresorPay.toUpperCase())) {
-        matriculeTresorPay = matricule;
+      const matriculeTresorPay = rowValue(row, matriculeTresorPayKey) || matricule;
+      if (seenMtp.has(matriculeTresorPay.toUpperCase())) {
+        errors.push(`Ligne ${rowNum} : Matricule Trésor Pay « ${matriculeTresorPay} » répété dans le fichier.`);
+        continue;
       }
       seenMtp.add(matriculeTresorPay.toUpperCase());
-
-      const rowNum = i + 2;
-
-      if (!matricule) { errors.push(`Ligne ${rowNum} : Matricule manquant.`); continue; }
-      if (!nom) { errors.push(`Ligne ${rowNum} : Nom manquant.`); continue; }
-      
       etudiantToCreate.push({
-        matricule: matricule.toUpperCase(),
-        nom: nom.toUpperCase(),
-        prenom,
-        antenneId,
-        filiereId,
-        statutId,
-        prefixeMatricule: null,
-        promotionString,
-        promotionId,
-        matriculeTresorPay: matriculeTresorPay.trim(),
+        matricule, nom: nom.toUpperCase(), prenom,
+        antenneId: antenne.id, filiereId: filiere.id, statutId: statut.id,
+        prefixeMatricule: null, promotionString: promotion.nom, promotionId: promotion.id,
+        matriculeTresorPay,
       });
     }
 

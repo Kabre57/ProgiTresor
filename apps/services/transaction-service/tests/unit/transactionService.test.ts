@@ -96,8 +96,8 @@ describe('TransactionService', () => {
       (prisma.transaction.createMany as jest.Mock).mockResolvedValue({ count: 1 });
 
       const payload = {
-        nomFichier: 'test.csv',
-        typeFichier: 'CSV' as const,
+        nomFichier: 'test.xlsx',
+        typeFichier: 'XLSX' as const,
         auteurId: 1,
         items: [{
           refTresor: 'REF-001',
@@ -120,8 +120,8 @@ describe('TransactionService', () => {
       (prisma.transaction.createMany as jest.Mock).mockResolvedValue({ count: 0 });
 
       const payload = {
-        nomFichier: 'test.csv',
-        typeFichier: 'CSV' as const,
+        nomFichier: 'test.xlsx',
+        typeFichier: 'XLSX' as const,
         auteurId: 1,
         items: [{
           refTresor: 'REF-DUP',
@@ -142,8 +142,8 @@ describe('TransactionService', () => {
       (prisma.transaction.createMany as jest.Mock).mockResolvedValue({ count: 1 });
 
       const payload = {
-        nomFichier: 'semantic.csv',
-        typeFichier: 'CSV' as const,
+        nomFichier: 'semantic.xlsx',
+        typeFichier: 'XLSX' as const,
         auteurId: 1,
         items: [{
           refTresor: 'REF-SEM-001',

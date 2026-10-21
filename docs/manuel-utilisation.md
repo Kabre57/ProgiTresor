@@ -8,7 +8,7 @@ Le compte de recette possède le rôle `ADMIN`, l’accès aux modules de gestio
 
 1. Ouvrir [la page de connexion](https://progitresor.online/login).
 2. Dans **Nom d’utilisateur**, saisir `test.recette@progitresor.online`.
-3. Saisir le mot de passe choisi pendant la création du compte.
+3. Pour un agent, saisir le mot de passe choisi pendant la création du compte. Pour un étudiant, saisir son matricule exact comme nom d’utilisateur et comme mot de passe.
 4. Se connecter et ouvrir le tableau de bord.
 
 La navigation regroupe les fonctions de pilotage, les fiches étudiants, les référentiels et l’administration. Les pages ci-dessous sont également accessibles par leur adresse, en ajoutant le chemin au domaine `https://progitresor.online`.
@@ -56,9 +56,25 @@ Le compte de recette permet de parcourir les modules de gestion. Pour vérifier 
 
 Ouvrir le référentiel, utiliser l’action de création, remplir les champs demandés et enregistrer. Rechercher ensuite la nouvelle valeur et vérifier qu’elle peut être sélectionnée dans les formulaires qui en dépendent. Pour modifier une valeur, ouvrir son action de modification et enregistrer les changements.
 
+Pour une importation, télécharger le modèle Excel depuis la fenêtre d’import. Les liens entre référentiels se renseignent avec des valeurs métier : **Flux** dans les types de recettes, **Type de recette** et éventuellement **Flux** dans les nomenclatures. Utiliser un libellé ou un code affiché dans les feuilles de référence du modèle. Les colonnes **Libellé** et **Désignation** sont reconnues pour désigner une valeur. Un libellé partagé par plusieurs références doit être précisé par son code métier ou son flux.
+
+Pour les promotions, un même nom peut être utilisé pour plusieurs niveaux : **Deuxième année / Licence** et **Deuxième année / Auxiliaire** sont deux promotions distinctes. Le couple **nom et niveau** doit rester unique.
+
+Dans les nomenclatures produits, les onglets **Flux Budget** et **Flux Hors Budget** affichent les produits selon le flux du type de recette auquel ils sont rattachés. Le compteur représente le nombre de nomenclatures, et non le nombre de types de recettes. Pour corriger un rattachement, vérifier d’abord le type de recette sélectionné et son flux.
+
 La suppression peut être refusée si une valeur est déjà utilisée. Conserver les référentiels associés aux opérations enregistrées plutôt que de modifier leur sens pour réutiliser leur code.
 
 ## Créer et consulter un étudiant
+
+### Importer un fichier Excel
+
+Dans l’écran d’import, cliquer sur **Télécharger le modèle Excel**. Remplir la première feuille avec les colonnes **Matricule, Nom, Prénom, Antenne, Filière, Statut, Promotion, Niveau, Matricule Trésor Pay**. Les autres feuilles du modèle contiennent les noms, libellés et codes métier disponibles ; aucun identifiant interne n’est demandé.
+
+**Antenne**, **Filière**, **Statut** et **Promotion** sont obligatoires. Recopier les valeurs des feuilles de référence. **Niveau** permet de distinguer deux promotions portant le même nom et devient nécessaire dans ce cas. **Matricule Trésor Pay** est facultatif ; à défaut, le matricule étudiant est utilisé.
+
+Les différences de majuscules ou d’accents sont tolérées. Une valeur inconnue ou ambiguë est signalée avec le numéro de ligne : corriger la valeur puis réimporter. L’application ne remplace pas une valeur inconnue par la première antenne ou la première promotion disponible.
+
+### Saisir une fiche
 
 1. Ouvrir **Fiches étudiants**, puis l’action de création, ou `/etudiant/create`.
 2. Renseigner le matricule et l’identité, puis les champs requis du formulaire.
@@ -79,18 +95,20 @@ Une correspondance incorrecte peut rattacher une recette au mauvais étudiant. V
 
 ## Importer et contrôler les transactions
 
+Le bouton **Télécharger le modèle Excel** fournit une première feuille à remplir et les feuilles des antennes et nomenclatures disponibles. Utiliser leurs noms, libellés ou codes métier dans les colonnes **Antenne** et **Nomenclature**. Les numéros internes de la base ne sont pas nécessaires. Les colonnes **Flux** et **Type de recette** peuvent préciser un rattachement ambigu.
+
 1. Ouvrir **Transactions**, à `/transactions`.
 2. Choisir **Importer des transactions** et sélectionner le fichier.
-3. Utiliser un format accepté par l’écran : CSV, Excel ou JSON.
+3. Utiliser un format accepté par l’écran : Excel (.xlsx ou .xls).
 4. Vérifier le nom du fichier et le nombre de transactions détectées, puis cliquer sur **Lancer l’import fichier**.
 5. Lire le bilan : nombre de transactions créées et doublons ignorés.
 6. Rechercher une référence importée et contrôler son montant, sa date, son étudiant, son antenne et sa nomenclature.
 
-Pour un fichier CSV ou Excel, les en-têtes reconnus comprennent notamment `reference`, `date`, `montant`, `matricule`, `payeur`, `filiere`, `niveau`, `antenne`, `type recette` et `type flux`. Utiliser un export conforme au format métier attendu ; les libellés financiers et les rattachements doivent correspondre aux référentiels.
+Pour un fichier Excel, les en-têtes reconnus comprennent notamment `reference`, `date`, `montant`, `matricule`, `payeur`, `filiere`, `niveau`, `antenne`, `type recette` et `type flux`. Utiliser un export conforme au format métier attendu ; les libellés financiers et les rattachements doivent correspondre aux référentiels.
 
 Les filtres permettent de rechercher par période, référence Trésor, étudiant, produit, antenne, promotion, filière, statut étudiant, type de flux, type de recette et nomenclature. Commencer par une référence précise, puis élargir la recherche.
 
-L’écran propose également une récupération depuis Trésor Pay. Son fonctionnement dépend de la configuration de cette intégration. Après récupération, contrôler le bilan et les références comme pour un import de fichier.
+La récupération automatique depuis Trésor Pay est en attente des accès officiels de l’établissement. Le bouton affiche un message d’indisponibilité et ne génère aucun paiement. Utiliser l’import Excel des paiements réels en attendant. Le [guide de connexion](connexion-tresor-pay.md) indique les informations à demander à Trésor Pay et le travail de raccordement.
 
 Pour corriger une transaction, ouvrir sa modification, ajuster les champs autorisés et enregistrer. Vérifier les champs **Statut Traitement** et les rattachements avant une synthèse. Tester le comportement des doublons en réimportant le même fichier de recette et en comparant le bilan au premier import.
 
@@ -140,7 +158,7 @@ La page `/compta/lots` porte le titre **Gestion Budgétaire**.
 6. Lorsque le lot est prêt, utiliser l’action **Transmettre OP**.
 7. Vérifier le nouveau statut et les éléments transmis.
 
-L’écran propose aussi la gestion d’une ligne budgétaire hors budget ainsi que des exports CSV et PDF. Vérifier les filtres actifs avant d’exporter, puis ouvrir le fichier pour comparer les références et les montants à l’écran.
+L’écran propose aussi la gestion d’une ligne budgétaire hors budget ainsi que des exports Excel et PDF. Vérifier les filtres actifs avant d’exporter, puis ouvrir le fichier pour comparer les références et les montants à l’écran.
 
 ## Consulter les OP et contrôler leur cohérence
 
@@ -159,9 +177,9 @@ Un résultat **CONFORME** et un écart nul indiquent une concordance pour le con
 3. Vérifier la case **Actif**, puis cliquer sur **Enregistrer**.
 4. Retrouver le compte dans la liste et vérifier ses informations.
 
-La connexion utilise **Nom utilisateur**. Pour une connexion par adresse e-mail, saisir la même adresse dans **Nom utilisateur** et **Email**. Un compte étudiant utilise son matricule comme nom d’utilisateur.
+La connexion utilise **Nom utilisateur**. Pour une connexion par adresse e-mail, saisir la même adresse dans **Nom utilisateur** et **Email**. Un compte étudiant utilise son matricule exact comme nom d’utilisateur et comme mot de passe. Le compte et le rôle `ETUDIANT` sont créés automatiquement à la première connexion, sans droits administrateur, si une fiche étudiant définitive existe. Un compte désactivé reste bloqué. Une fiche temporaire doit être régularisée avant de permettre cette connexion.
 
-La modification permet notamment de changer les informations et de renseigner un nouveau mot de passe. Pour suspendre un compte, décocher **Actif**, enregistrer et vérifier que la nouvelle connexion est refusée.
+La modification d’un compte agent permet notamment de changer les informations et de renseigner un nouveau mot de passe. Pour les étudiants, la règle de connexion reste le matricule dans les deux champs. Pour suspendre un compte, décocher **Actif**, enregistrer et vérifier que la nouvelle connexion est refusée.
 
 ### Vérifier les rôles et les permissions
 
@@ -174,11 +192,13 @@ Le compte de recette créé par le script reçoit le rôle `ADMIN` et le niveau 
 Le compte administrateur ne possède pas de profil étudiant personnel. Une vérification de **Ma scolarité**, **Mes attestations**, **Mon profil** et des notifications nécessite un autre compte.
 
 1. Créer ou choisir une fiche étudiant de recette et noter son matricule exact.
-2. Vérifier qu’un rôle de code `ETUDIANT` existe dans l’administration des rôles ; le créer s’il manque, avec le libellé **Étudiant**.
-3. Créer un utilisateur actif avec ce rôle et le matricule exact comme **Nom utilisateur**.
-4. Ouvrir une session distincte, par exemple une fenêtre privée, et se connecter avec ce compte.
+2. Vérifier que la fiche est définitive et que son matricule est correct ; aucune création manuelle de compte utilisateur n’est nécessaire.
+3. Ouvrir une session distincte, par exemple une fenêtre privée.
+4. Saisir ce matricule exact dans **Nom d’utilisateur** et dans **Mot de passe**. Exemple : `21P-0154ASIB` dans les deux champs, seulement si cette fiche existe. Le compte est créé à cette première connexion et le portail étudiant s’ouvre.
 5. Ouvrir `/etudiant/portail`, puis les pages `/etudiant/scolarite`, `/etudiant/attestations`, `/etudiant/profile`, `/etudiant/security` et `/etudiant/notifications`.
 6. Vérifier que les informations, paiements et documents concernent uniquement cet étudiant.
+
+Le matricule sert de mot de passe : toute personne qui le connaît peut donc accéder au compte étudiant. Ne pas partager son matricule comme un identifiant public.
 
 Une réponse 404 sur `/api/etudiant/me` pour un compte étudiant demande de vérifier la correspondance entre son nom d’utilisateur et le matricule de la fiche. L’absence d’appel à cette route pour l’administrateur est attendue.
 
@@ -223,6 +243,8 @@ Inscrire pour chaque étape la date, la référence testée, le résultat observ
 | Réponse 403 | Vérifier le rôle, les niveaux de périmètre et les exclusions |
 | Réponse 404 sur la connexion | Faire vérifier le routage Nginx de `/api/` vers la gateway |
 | Réponse 404 sur le profil étudiant | Vérifier le matricule utilisé comme identifiant et l’existence de sa fiche |
+| Réponse 502 pendant un import | Vérifier la liste des étudiants avant de relancer : le traitement peut continuer après une coupure. Signaler la taille du fichier, son nombre de lignes et la durée avant l’erreur |
+| Réponse 503 sur la récupération Trésor Pay | Les accès à la vraie API ne sont pas encore raccordés ; utiliser l’import Excel des paiements réels |
 | Liste vide | Réinitialiser les filtres et contrôler la période ou le statut |
 | Transmission refusée pour PDF manquant | Vérifier la validation de la synthèse et le document de l’OT |
 | Écart entre OP et OT | Comparer les références, lignes, montants et lots concernés |

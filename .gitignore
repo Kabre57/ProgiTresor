@@ -98,3 +98,4 @@ yarn-error.log*
 !/docs/
 /docs/*
 !/docs/manuel-utilisation.md
+!/docs/connexion-tresor-pay.md

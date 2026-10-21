@@ -13,6 +13,7 @@ import { applyPermissionPayload, decodeJwtPermissions } from '@/lib/auth/permiss
 import { useAuthStore } from '@/lib/store/useAuthStore';
 import { loginSchema, type LoginInput } from '@/types/auth.types';
 import Logo from '@/components/template/Logo';
+import { isStudentUser } from '@/lib/auth/roles';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -45,7 +46,9 @@ export default function LoginPage() {
 
       setSession({ ...session, user });
       const params = new URLSearchParams(window.location.search);
-      router.replace(params.get('next') || '/dashboard');
+      const next = params.get('next');
+      const safeNext = next?.startsWith('/') && !next.startsWith('//') && !next.includes('\\') ? next : null;
+      router.replace(isStudentUser(user) ? '/etudiant/portail' : safeNext || '/dashboard');
     } catch (submitError) {
       setError(getErrorMessage(submitError));
     }

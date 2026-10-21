@@ -8,6 +8,7 @@ import { prisma } from '../utils/prisma';
 import { buildUserPermissionsPayload } from './authPermissionPayload';
 import crypto from 'crypto';
 import Redis from 'ioredis';
+import { loginStudent } from './studentLoginService';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET;
@@ -79,14 +80,17 @@ const toPublicUser = (user: UserWithRole): PublicUser => ({
 });
 
 export const loginUser = async (username: string, password: string) => {
-  const user = await userRepository.findUserByUsername(username);
+  let user = await userRepository.findUserByUsername(username);
+  if (!user || user.role.code === 'ETUDIANT') {
+    user = await loginStudent(username, password, user);
+  }
   if (!user || !user.actif) {
-    throw new UnauthorizedError('Invalid username or password');
+    throw new UnauthorizedError('Identifiant ou mot de passe incorrect.');
   }
 
   const match = await bcrypt.compare(password, user.motDePasseHash);
   if (!match) {
-    throw new UnauthorizedError('Invalid username or password');
+    throw new UnauthorizedError('Identifiant ou mot de passe incorrect.');
   }
 
   const updatedUser = await userRepository.updateUserLastLogin(user.id);

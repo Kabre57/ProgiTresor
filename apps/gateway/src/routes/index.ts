@@ -2,6 +2,7 @@ import { authRoutes } from './auth.routes';
 import {
   etudiantRoutes,
   etudiantImportRoute,
+  etudiantReferentialImportRoute,
   etudiantMeRoute,
   etudiantMapRoute,
   etudiantGetTresorPayRoute,
@@ -67,6 +68,7 @@ export const allRoutes: GatewayRoute[] = [
   rolesRoute,
   permissionsRoute,
   etudiantImportRoute,
+  etudiantReferentialImportRoute,
   etudiantMeRoute,
   etudiantMapRoute,
   etudiantNotificationsRoute,

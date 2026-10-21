@@ -1,3 +1,4 @@
+import * as XLSX from 'xlsx';
 import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
@@ -111,8 +112,8 @@ async function main() {
   console.log('Creating ImportFichier record...');
   const importFichier = await prisma.importFichier.create({
     data: {
-      nomFichier: 'GENERATED_TEST_DATA_10K.csv',
-      typeFichier: 'CSV',
+      nomFichier: 'GENERATED_TEST_DATA_10K.xlsx',
+      typeFichier: 'XLSX',
       auteurId: 1,
       nbLignesLues: 10000,
       nbLignesTraitees: 10000,
@@ -166,10 +167,9 @@ async function main() {
     console.log(`Inserted chunk ${i / chunkSize + 1}/${transactions.length / chunkSize}...`);
   }
 
-  // 5. Generate CSV import file
-  console.log('Generating CSV import file content...');
-  const csvHeaders = 'refTresor,dateHeure,montant,etudiantMatricule,libelleProduitBrut,nomPayeurBrut\n';
-  let csvContent = csvHeaders;
+  // 5. Generate Excel import file
+  console.log('Generating Excel import file content...');
+  const excelRows: (string | number)[][] = [['refTresor', 'dateHeure', 'montant', 'etudiantMatricule', 'libelleProduitBrut', 'nomPayeurBrut']];
 
   for (let i = 1; i <= 10000; i++) {
     const etudiant = etudiant[(i - 1) % etudiant.length];
@@ -180,7 +180,7 @@ async function main() {
     const montant = 10000 + Math.floor(Math.random() * 29) * 5000;
     const ref = `IMP-2025-${i.toString().padStart(6, '0')}`;
 
-    csvContent += `${ref},${txDate.toISOString()},${montant},${etudiant.matricule},"${nom.libelleBrut}","${etudiant.nom} ${etudiant.prenom}"\n`;
+    excelRows.push([ref, txDate.toISOString(), montant, etudiant.matricule, nom.libelleBrut, `${etudiant.nom} ${etudiant.prenom}`]);
   }
 
   const scratchDir = path.resolve(__dirname, '../scratch');
@@ -188,9 +188,11 @@ async function main() {
     fs.mkdirSync(scratchDir, { recursive: true });
   }
 
-  const csvPath = path.join(scratchDir, 'transactions_10k_import.csv');
-  fs.writeFileSync(csvPath, csvContent);
-  console.log(`CSV import file successfully written to: ${csvPath}`);
+  const excelPath = path.join(scratchDir, 'transactions_10k_import.xlsx');
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(excelRows), 'Transactions');
+  XLSX.writeFile(workbook, excelPath);
+  console.log(`Excel import file successfully written to: ${excelPath}`);
 
   console.log('Transaction generation completed successfully.');
 }

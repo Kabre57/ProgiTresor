@@ -1,3 +1,4 @@
+import { isExcelUpload } from '../../../../../shared/utils/excelFiles';
 import { Request, Response, NextFunction } from 'express';
 import { ZodSchema } from 'zod';
 import * as transactionService from '../services/transactionService';
@@ -5,6 +6,7 @@ import { ValidationError, AppError } from '../utils/errors';
 import { prisma } from '../utils/prisma';
 import logger from '../utils/logger';
 import { parseImportFile } from '../services/importParserService';
+import { resolveImportFileReferences } from '../services/importFileReferences';
 import { ImportPayloadSchema } from '../../../../../shared/types/transaction.types';
 
 const toJsonSafe = (value: unknown): unknown => {
@@ -304,58 +306,11 @@ export const getMetrics = async (req: Request, res: Response) => {
   res.send(await promClient.register.metrics());
 };
 
-export const fetchFromTresor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    const userId = req.headers['x-user-id'] ? parseInt(req.headers['x-user-id'] as string, 10) : 1;
-
-    const now = new Date();
-    const items = [
-      {
-        refTresor: `TRES-PAY-${Date.now()}-001`,
-        montant: 120000,
-        dateHeure: now,
-        etudiantMatricule: '21P-0154ASIB',
-        nomPayeurBrut: 'KOUAME AFFOUE MARIE',
-        libelleProduitBrut: '1er Versement Frais de Scolarite',
-        filiere: 'INFIRMIER',
-        niveau: 'L1',
-        antenne: 'BOUAKE',
-        nom: 'KOUAME',
-        prenom: 'MARIE',
-        typeRecette: 'Scolarite L1 Public - Versement 1',
-        typeFlux: 'CLASSE',
-      },
-      {
-        refTresor: `TRES-PAY-${Date.now()}-002`,
-        montant: 30000,
-        dateHeure: now,
-        etudiantMatricule: '22P-0987BKE',
-        nomPayeurBrut: 'TRAORE BAKARY',
-        libelleProduitBrut: 'Frais Encadrement L1',
-        filiere: 'INFIRMIER',
-        niveau: 'L1',
-        antenne: 'BOUAKE',
-        nom: 'TRAORE',
-        prenom: 'BAKARY',
-        typeRecette: 'Encadrement L1',
-        typeFlux: 'CLASSE',
-      },
-    ];
-
-    const payload = {
-      nomFichier: `TRESOR_PAY_API_FETCH_${Date.now()}`,
-      typeFichier: 'JSON' as const,
-      auteurId: isNaN(userId) ? 1 : userId,
-      periodeDebut: now,
-      periodeFin: now,
-      items,
-    };
-
-    const result = await transactionService.importTransactions(payload);
-    res.json({ message: 'Synchronisation Trésor Pay réussie', ...result });
-  } catch (err) {
-    next(err);
-  }
+/** Aucun paiement ne doit être généré en l'absence d'un connecteur réel. */
+export const fetchFromTresor = async (_req: Request, _res: Response, next: NextFunction): Promise<void> => {
+  next(new AppError(503,
+    'La connexion à Trésor Pay n’est pas encore disponible. L’établissement doit obtenir les accès API et la documentation auprès de Trésor Pay. En attendant, utilisez l’import Excel des paiements réels.'
+  ));
 };
 
 export const updateTransaction = async (req: Request, res: Response, next: NextFunction) => {
@@ -411,18 +366,13 @@ export const importFile = async (req: Request, res: Response, next: NextFunction
     const auteurId = isNaN(rawAuteurId) ? 1 : rawAuteurId;
 
     const nomFichier = file.originalname;
-    const extension = nomFichier.split('.').pop()?.toLowerCase();
-    let typeFichier: 'CSV' | 'XLSX';
-
-    if (extension === 'csv') {
-      typeFichier = 'CSV';
-    } else if (extension === 'xlsx' || extension === 'xls') {
-      typeFichier = 'XLSX';
-    } else {
-      throw new AppError(400, 'Extension de fichier non supportée. Utilisez .csv ou .xlsx.');
+    if (!isExcelUpload(file)) {
+      throw new AppError(400, 'Sélectionnez un fichier Excel valide (.xlsx ou .xls).');
     }
+    const typeFichier = 'XLSX';
 
     const parsedItems = parseImportFile(file.buffer, typeFichier);
+    await resolveImportFileReferences(parsedItems);
 
     const payload = ImportPayloadSchema.parse({
       nomFichier,

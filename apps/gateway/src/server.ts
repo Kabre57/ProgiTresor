@@ -15,6 +15,7 @@ import { config } from './config';
 
 // Import des routes depuis le dossier dédié
 import { allRoutes } from './routes/index';
+import { getProxyTimeoutMs } from './utils/proxyTimeout';
 import { permissionMiddleware } from './middlewares/permission.middleware';
 
 // ============================================================
@@ -477,11 +478,7 @@ app.get('/api/logs', permissionMiddleware, (_req, res) => {
 
 allRoutes.forEach((service) => {
   const middlewares: RequestHandler[] = [];
-  const isLongRunningImportRoute = service.path === '/api/transactions/import-file'
-    || service.path === '/api/transactions/import';
-  const proxyTimeoutMs = isLongRunningImportRoute
-    ? Number(process.env.GATEWAY_IMPORT_TIMEOUT_MS ?? 15 * 60 * 1000)
-    : Number(process.env.GATEWAY_PROXY_TIMEOUT_MS ?? 30 * 1000);
+  const proxyTimeoutMs = getProxyTimeoutMs(service.path);
 
   // Si la route est sécurisée, ajout des middlewares d'auth et RBAC
   if (service.secure) {

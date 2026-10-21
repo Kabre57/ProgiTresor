@@ -1,5 +1,7 @@
 'use client';
 
+import * as XLSX from 'xlsx';
+
 import { useMemo, useState } from 'react';
 import { Banknote, Download, Plus, RefreshCw, Send, ClipboardList } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -206,13 +208,17 @@ export default function LotsTraitementPage() {
     }
   };
 
-  const exportLots = (format: 'csv' | 'pdf') => {
+  const exportLots = (format: 'xlsx' | 'pdf') => {
     const rows = lots.map((lot) => [lot.reference, lot.statut, lot.nombreEcritures, formatAmount(lot.montantTotal)]);
-    if (format === 'csv') {
-      const csv = [['Bordereau / Lot', 'Statut', 'Ecritures', 'Montant'], ...rows].map((row) => row.join(';')).join('\n');
-      const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-      const link = document.createElement('a');
-      link.href = url; link.download = `lots_traitement_${Date.now()}.csv`; link.click(); URL.revokeObjectURL(url);
+    if (format === 'xlsx') {
+      const sheet = XLSX.utils.aoa_to_sheet([
+        ['Bordereau / Lot', 'Statut', 'Écritures', 'Montant'],
+        ...lots.map((lot) => [lot.reference, lot.statut, lot.nombreEcritures, toAmount(lot.montantTotal)]),
+      ]);
+      sheet['!cols'] = [{ wch: 30 }, { wch: 24 }, { wch: 12 }, { wch: 20 }];
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, sheet, 'Lots de traitement');
+      XLSX.writeFile(workbook, `lots_traitement_${Date.now()}.xlsx`);
       return;
     }
     const html = `<table><thead><tr><th>Bordereau / Lot</th><th>Statut</th><th>Ecritures</th><th>Montant</th></tr></thead><tbody>${rows.map((row) => `<tr>${row.map((cell) => `<td>${cell}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
@@ -306,7 +312,7 @@ export default function LotsTraitementPage() {
         description="Filtrez et regroupez les écritures d'OT en Bordereaux (lots), effectuez les imputations et transmettez-les au Budget."
         actions={
           <div className="flex gap-2">
-            <Button type="button" variant="secondary" onClick={() => exportLots('csv')}>CSV</Button>
+            <Button type="button" variant="secondary" onClick={() => exportLots('xlsx')}>Excel</Button>
             <Button type="button" variant="secondary" onClick={() => exportLots('pdf')}>PDF</Button>
             <Button
               type="button"

@@ -4,8 +4,10 @@ import { Upload } from '@/components/ui/Upload';
 import { Button } from '@/components/ui/Button';
 import { CheckCircle2, Upload as UploadIcon, RefreshCw } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import { useImportTransactions, useImportTransactionFile, useFetchFromTresor } from '@/lib/hooks/useOperationsQueries';
+import { useImportTransactionFile, useFetchFromTresor } from '@/lib/hooks/useOperationsQueries';
 import { useToast } from '@/components/ui/Toast';
+import { downloadImportTemplate } from '@/lib/utils/importTemplates';
+import { isExcelFileName } from '@/lib/utils/excelFiles';
 import { getErrorMessage } from '@/lib/api/client';
 
 interface ImportTransactionModalProps {
@@ -41,37 +43,16 @@ const headerMap: Record<string, string> = {
   'libelle_produit_brut': 'libelleProduitBrut',
 };
 
-const parseCSV = (text: string): Record<string, any>[] => {
-  try {
-    const workbook = XLSX.read(text, { type: 'string', cellDates: true });
-    const sheetName = workbook.SheetNames[0];
-    if (!sheetName) return [];
-    const sheet = workbook.Sheets[sheetName];
-    const jsonData = XLSX.utils.sheet_to_json<Record<string, any>>(sheet, { defval: '' });
-    
-    return jsonData.map(item => {
-      const mappedItem: Record<string, any> = {};
-      for (const key of Object.keys(item)) {
-        const cleanKey = key.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        const mappedHeader = headerMap[cleanKey] || key.trim();
-        mappedItem[mappedHeader] = item[key];
-      }
-      return mappedItem;
-    });
-  } catch (err) {
-    console.error("CSV parse error via SheetJS:", err);
-    return [];
-  }
-};
-
 const parseXLSX = (buffer: ArrayBuffer): Record<string, any>[] => {
   const workbook = XLSX.read(buffer, { type: 'array', cellDates: true });
   const sheetName = workbook.SheetNames[0];
   if (!sheetName) return [];
   const sheet = workbook.Sheets[sheetName];
   const jsonData = XLSX.utils.sheet_to_json<Record<string, any>>(sheet, { defval: '' });
-  
-  return jsonData.map(item => {
+
+  if (jsonData.length === 0) throw new Error('Le fichier ne contient aucune transaction à importer.');
+
+  const mappedRows = jsonData.map(item => {
     const mappedItem: Record<string, any> = {};
     for (const key of Object.keys(item)) {
       const cleanKey = key.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -80,6 +61,35 @@ const parseXLSX = (buffer: ArrayBuffer): Record<string, any>[] => {
     }
     return mappedItem;
   });
+  const requiredFields = [
+    ['refTresor', 'reference'],
+    ['dateHeure', 'date'],
+    ['montant', 'montant'],
+    ['etudiantMatricule', 'matricule'],
+    ['nomPayeurBrut', 'payeur'],
+    ['libelleProduitBrut', 'produit'],
+  ] as const;
+  const missingHeaders = requiredFields
+    .filter(([field]) => !Object.prototype.hasOwnProperty.call(mappedRows[0], field))
+    .map(([, label]) => label);
+  if (missingHeaders.length > 0) {
+    throw new Error(`Colonnes requises manquantes : ${missingHeaders.join(', ')}. Modèle attendu : reference, date, montant, matricule, payeur, produit.`);
+  }
+
+  const invalidRow = mappedRows.findIndex(row => requiredFields.some(([field]) => {
+    const value = row[field];
+    if (value === undefined || value === null || String(value).trim() === '') return true;
+    if (field === 'montant') {
+      const amount = typeof value === 'string'
+        ? Number(value.trim().replace(/[\s\u00a0\u202f]/g, '').replace(',', '.'))
+        : Number(value);
+      return !Number.isSafeInteger(amount) || amount <= 0;
+    }
+    return false;
+  }));
+  if (invalidRow >= 0) throw new Error(`La ligne ${invalidRow + 2} doit renseigner les six colonnes du modèle.`);
+
+  return mappedRows;
 };
 
 export function ImportTransactionModal({ open, onClose }: ImportTransactionModalProps) {
@@ -90,7 +100,6 @@ export function ImportTransactionModal({ open, onClose }: ImportTransactionModal
   const [parsedData, setParsedData] = useState<unknown[] | null>(null);
   const [rawFile, setRawFile] = useState<File | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
-  const [fileType, setFileType] = useState<'CSV' | 'CSV_TRESOR' | 'XLSX' | 'JSON'>('CSV_TRESOR');
 
   const handleFileChange = (newFiles: File[]) => {
     setParsedData(null);
@@ -99,16 +108,12 @@ export function ImportTransactionModal({ open, onClose }: ImportTransactionModal
 
     if (newFiles.length === 0) return;
     const file = newFiles[0];
+    if (!isExcelFileName(file.name)) {
+      toast.error('Sélectionnez un fichier Excel (.xlsx ou .xls).');
+      return;
+    }
     setRawFile(file);
     setFileName(file.name);
-
-    const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
-    const isCsv = file.name.endsWith('.csv');
-    const isJson = file.name.endsWith('.json');
-
-    if (isExcel) setFileType('XLSX');
-    else if (isCsv) setFileType('CSV');
-    else if (isJson) setFileType('JSON');
 
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -116,29 +121,16 @@ export function ImportTransactionModal({ open, onClose }: ImportTransactionModal
       if (!result) return;
 
       try {
-        if (isExcel) {
-          const buffer = result as ArrayBuffer;
-          const data = parseXLSX(buffer);
-          setParsedData(data);
-        } else if (isCsv) {
-          const text = result as string;
-          const data = parseCSV(text);
-          setParsedData(data);
-        } else if (isJson) {
-          const text = result as string;
-          const data = JSON.parse(text);
-          setParsedData(Array.isArray(data) ? data : [data]);
-        }
+        const data = parseXLSX(result as ArrayBuffer);
+        setParsedData(data);
       } catch (err) {
-        toast.error("Erreur de format de fichier.");
+        setRawFile(null);
+        setFileName(null);
+        toast.error(err instanceof Error ? err.message : 'Le fichier Excel est invalide.');
       }
     };
 
-    if (isExcel) {
-      reader.readAsArrayBuffer(file);
-    } else {
-      reader.readAsText(file);
-    }
+    reader.readAsArrayBuffer(file);
   };
 
   const handleImport = async () => {
@@ -173,12 +165,19 @@ export function ImportTransactionModal({ open, onClose }: ImportTransactionModal
   return (
     <Modal open={open} onClose={onClose} title="Importer des transactions" width={550}>
       <div className="space-y-6">
+        <Button
+          type="button"
+          onClick={() => downloadImportTemplate('transactions').catch(error => toast.error(getErrorMessage(error)))}
+        >
+          Télécharger le modèle Excel
+        </Button>
+
         <Upload
           draggable
-          accept=".json,.csv,.xlsx,.xls"
+          accept=".xlsx,.xls"
           uploadLimit={1}
           onChange={handleFileChange}
-          tip={<span className="text-xs text-slate-400">Fichiers acceptés : .xlsx (Excel), .csv, .json</span>}
+          tip={<span className="text-xs text-slate-400">Fichiers Excel (.xlsx, .xls) uniquement</span>}
         />
 
         {parsedData && parsedData.length > 0 && (
@@ -225,6 +224,9 @@ export function ImportTransactionModal({ open, onClose }: ImportTransactionModal
             <RefreshCw className="h-4 w-4 mr-2 animate-pulse" />
             Récupérer depuis Trésor Pay (Auto-résolution)
           </Button>
+          <p className="text-xs text-slate-500">
+            Connexion Trésor Pay en attente des accès de l’établissement. Utilisez l’import Excel en attendant.
+          </p>
         </div>
       </div>
     </Modal>

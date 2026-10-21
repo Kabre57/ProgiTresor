@@ -51,7 +51,7 @@ export const TransactionItemSchema = z.object({
  */
 export const ImportPayloadSchema = z.object({
   nomFichier: z.string().trim().min(1),
-  typeFichier: z.enum(['XLSX', 'CSV', 'CSV_TRESOR', 'PDF', 'JSON']),
+  typeFichier: z.enum(['XLSX', 'PDF', 'JSON']),
   auteurId: z.number().int().nonnegative(),
   periodeDebut: z.coerce.date().optional().nullable(),
   periodeFin: z.coerce.date().optional().nullable(),

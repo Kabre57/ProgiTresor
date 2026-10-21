@@ -12,7 +12,7 @@ export const transactionImportRoute = {
   requiredLevel: 2
 };
 
-// Route pour l'import de fichier XLS/CSV
+// Route pour l'import de fichier Excel
 export const transactionImportFileRoute = {
   path: '/api/transactions/import-file',
   target: config.TRANSACTION_SERVICE_URL,

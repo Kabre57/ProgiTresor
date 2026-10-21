@@ -92,6 +92,7 @@ services:
       - "5001"
     environment:
       - PORT=5001
+      - ETUDIANT_SERVICE_URL=http://etudiant-service:5002
       - DATABASE_URL=${DATABASE_URL_AUTH}
       - REDIS_URL=${REDIS_URL}
       - JWT_SECRET=${JWT_SECRET}

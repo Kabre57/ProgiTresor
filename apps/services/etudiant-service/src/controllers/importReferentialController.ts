@@ -1,3 +1,5 @@
+import { findImportColumn, findImportReferences } from '../../../../../shared/utils/importReferences';
+import { isExcelUpload } from '../../../../../shared/utils/excelFiles';
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../utils/prisma';
 import logger from '../utils/logger';
@@ -13,6 +15,11 @@ export const importReferential = async (req: Request, res: Response, next: NextF
       return;
     }
 
+    if (!isExcelUpload((req as any).file)) {
+      res.status(400).json({ error: 'Sélectionnez un fichier Excel valide (.xlsx ou .xls).' });
+      return;
+    }
+
     const workbook = XLSX.read((req as any).file.buffer, { type: 'buffer' });
     const firstSheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[firstSheetName];
@@ -24,10 +31,7 @@ export const importReferential = async (req: Request, res: Response, next: NextF
     }
 
     const rowKeys = Object.keys(rows[0]);
-    const findKey = (name: string) => {
-      const cleanName = name.replace(/[\s_-]/g, '').toLowerCase();
-      return rowKeys.find(k => k.trim().replace(/[\s_-]/g, '').toLowerCase() === cleanName);
-    };
+    const findKey = (...names: string[]) => findImportColumn(rowKeys, ...names);
 
     let createdCount = 0;
     let duplicateCount = 0;
@@ -82,7 +86,7 @@ export const importReferential = async (req: Request, res: Response, next: NextF
     }
     else if (entity === 'filieres') {
       const codeKey = findKey('code');
-      const libelleKey = findKey('libelle');
+      const libelleKey = findKey('libellé', 'désignation');
       const abreviationKey = findKey('abreviation') || findKey('abbreviation');
       if (!libelleKey) {
         res.status(400).json({ error: 'Colonne requise manquante. Le fichier doit au moins contenir la colonne : libelle.' });
@@ -119,7 +123,7 @@ export const importReferential = async (req: Request, res: Response, next: NextF
 
     else if (entity === 'statuts-etudiants' || entity === 'statuts') {
       const codeKey = findKey('code');
-      const libelleKey = findKey('libelle');
+      const libelleKey = findKey('libellé', 'désignation');
       if (!codeKey || !libelleKey) {
         res.status(400).json({ error: 'Colonnes requises manquantes. Le fichier doit contenir : code, libelle.' });
         return;
@@ -140,7 +144,7 @@ export const importReferential = async (req: Request, res: Response, next: NextF
     }
     else if (entity === 'types-flux') {
       const codeKey = findKey('code');
-      const libelleKey = findKey('libelle');
+      const libelleKey = findKey('libellé', 'désignation');
       if (!codeKey || !libelleKey) {
         res.status(400).json({ error: 'Colonnes requises manquantes. Le fichier doit contenir : code, libelle.' });
         return;
@@ -161,18 +165,13 @@ export const importReferential = async (req: Request, res: Response, next: NextF
     }
     else if (entity === 'types-recettes') {
       const codeKey = findKey('code');
-      const libelleKey = findKey('libelle');
-      const typeFluxCodeKey = findKey('typefluxcode') || findKey('type flux') || findKey('typeflux') || findKey('flux');
+      const libelleKey = findKey('libellé', 'désignation');
+      const typeFluxCodeKey = findKey('Flux', 'Type de flux', 'Type flux', 'typefluxcode', 'typeflux');
       if (!codeKey || !libelleKey || !typeFluxCodeKey) {
-        res.status(400).json({ error: 'Colonnes requises manquantes. Le fichier doit contenir : code, libelle, typefluxcode.' });
+        res.status(400).json({ error: 'Colonnes requises manquantes. Le fichier doit contenir : Code, Libellé, Flux (code ou libellé).' });
         return;
       }
       const fluxList = await prisma.typeFlux.findMany({ select: { id: true, code: true, libelle: true } });
-      const fluxMap = new Map<string, number>();
-      fluxList.forEach(f => {
-        fluxMap.set(f.code.toUpperCase(), f.id);
-        fluxMap.set(f.libelle.toUpperCase(), f.id);
-      });
       const dataToCreate: any[] = [];
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
@@ -180,9 +179,12 @@ export const importReferential = async (req: Request, res: Response, next: NextF
         const libelle = rowValue(row, libelleKey);
         const fCode = rowValue(row, typeFluxCodeKey).toUpperCase();
         if (!code || !libelle || !fCode) { errors.push(`Ligne ${i+2} : Informations manquantes.`); continue; }
-        const typeFluxId = fluxMap.get(fCode);
-        if (!typeFluxId) { errors.push(`Ligne ${i+2} : TypeFlux avec le code ou libellé ${fCode} inexistant.`); continue; }
-        dataToCreate.push({ code, libelle, typeFluxId });
+        const matches = findImportReferences(fCode, fluxList, f => [f.code], f => [f.libelle]);
+        if (matches.length !== 1) {
+          errors.push(`Ligne ${i+2} : Flux « ${fCode} » ${matches.length ? 'ambigu ; utiliser son code' : 'introuvable'}.`);
+          continue;
+        }
+        dataToCreate.push({ code, libelle, typeFluxId: matches[0].id });
       }
       if (dataToCreate.length > 0) {
         const result = await prisma.typeRecette.createMany({ data: dataToCreate, skipDuplicates: true });
@@ -192,7 +194,7 @@ export const importReferential = async (req: Request, res: Response, next: NextF
     }
     else if (entity === 'nomenclatures') {
       const codeProduitKey = findKey('codeproduit') || findKey('code');
-      let libelleKey = findKey('libelle') || findKey('libellestandard') || findKey('libelle standard');
+      let libelleKey = findKey('libellé', 'désignation') || findKey('libellestandard') || findKey('libelle standard');
       
       // Fallback for unnamed/empty second column (commonly index 1)
       if (!libelleKey && rowKeys.length > 1) {
@@ -202,68 +204,17 @@ export const importReferential = async (req: Request, res: Response, next: NextF
         }
       }
 
-      const typeRecetteCodeKey = findKey('typerecettecode') || findKey('type recette') || findKey('typerecette');
+      const typeRecetteCodeKey = findKey('Type de recette', 'Type recette', 'Recette', 'typerecettecode', 'typerecettelibelle');
       const montantKey = findKey('montant');
       const regexPatternKey = findKey('regexpattern') || findKey('regex') || findKey('pattern');
 
       if (!codeProduitKey || !libelleKey || !typeRecetteCodeKey) {
-        res.status(400).json({ error: 'Colonnes requises manquantes. Le fichier doit au moins contenir : codeproduit, libelle, typerecettecode.' });
+        res.status(400).json({ error: 'Colonnes requises manquantes. Le fichier doit au moins contenir : Code produit, Libellé, Type de recette (code ou libellé).' });
         return;
       }
 
-      // Auto-create missing TypeRecettes if they don't exist in the database
-      const trCodes = new Set<string>();
-      const trLibKey = findKey('typerecettelibelle');
-      rows.forEach(row => {
-        const val = rowValue(row, typeRecetteCodeKey).trim().toUpperCase();
-        if (val) trCodes.add(val);
-      });
-
-      if (trCodes.size > 0) {
-        const existingRecettes = await prisma.typeRecette.findMany({
-          where: { code: { in: Array.from(trCodes) } },
-          select: { code: true }
-        });
-        const existingCodes = new Set(existingRecettes.map(r => r.code.toUpperCase()));
-        const missingCodes = Array.from(trCodes).filter(c => !existingCodes.has(c));
-
-        if (missingCodes.length > 0) {
-          const defaultFlux = await prisma.typeFlux.findFirst();
-          if (!defaultFlux) {
-            res.status(400).json({ error: "Impossible de créer automatiquement les types de recettes car aucun type de flux n'existe." });
-            return;
-          }
-
-          const trData = missingCodes.map(code => {
-            // Check if there is a custom libelle in the row
-            let libelle = code;
-            if (trLibKey) {
-              const matchingRow = rows.find(r => rowValue(r, typeRecetteCodeKey).trim().toUpperCase() === code);
-              if (matchingRow) {
-                libelle = rowValue(matchingRow, trLibKey) || code;
-              }
-            }
-            return { code, libelle, typeFluxId: defaultFlux.id };
-          });
-
-          await prisma.typeRecette.createMany({ data: trData, skipDuplicates: true });
-          logger.info(`Auto-created ${trData.length} missing TypeRecette records during nomenclatures import.`);
-        }
-      }
-
-      const [recettes] = await Promise.all([
-        prisma.typeRecette.findMany({ select: { id: true, code: true, libelle: true } })
-      ]);
-
-      const recetteMap = new Map<string, number>();
-      recettes.forEach(r => {
-        recetteMap.set(r.code.toUpperCase(), r.id);
-        recetteMap.set(r.libelle.toUpperCase(), r.id);
-      });
-
-
-
-
+      const recettes = await prisma.typeRecette.findMany({ include: { typeFlux: true } });
+      const fluxKey = findKey('Flux', 'Type de flux', 'typefluxcode');
 
       const dataToCreate: any[] = [];
       for (let i = 0; i < rows.length; i++) {
@@ -278,10 +229,16 @@ export const importReferential = async (req: Request, res: Response, next: NextF
 
         if (!codeProduit || !libelle || !trCode) { errors.push(`Ligne ${i+2} : Informations indispensables manquantes.`); continue; }
 
-        const typeRecetteId = recetteMap.get(trCode);
-        if (!typeRecetteId) { errors.push(`Ligne ${i+2} : TypeRecette avec le code ou libellé ${trCode} inexistant.`); continue; }
-
-
+        const fluxValue = rowValue(row, fluxKey);
+        const matches = findImportReferences(trCode, recettes, r => [r.code], r => [r.libelle]);
+        const selected = fluxValue ? matches.filter(r =>
+          findImportReferences(fluxValue, [r.typeFlux], f => [f.code], f => [f.libelle]).length === 1
+        ) : matches;
+        if (selected.length !== 1) {
+          errors.push(`Ligne ${i+2} : Type de recette « ${trCode} » ${selected.length ? 'ambigu ; préciser son code ou la colonne Flux' : 'introuvable dans le flux indiqué ou les référentiels'}.`);
+          continue;
+        }
+        const typeRecetteId = selected[0].id;
 
         dataToCreate.push({
           codeProduit,

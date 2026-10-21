@@ -62,6 +62,8 @@ Ce seed crée ou met à jour uniquement `admin@progitresor.online` avec le mot d
 
 Le [manuel utilisateur](docs/manuel-utilisation.md) décrit les modules de l’application et contient un parcours de recette à compléter.
 
+Le [guide de connexion Trésor Pay](docs/connexion-tresor-pay.md) précise les accès à demander au fournisseur et les étapes de raccordement de la vraie API.
+
 Pour créer un compte de test distinct, depuis le projet et avec `auth-service` démarré :
 
 ```bash

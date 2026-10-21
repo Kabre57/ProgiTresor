@@ -75,21 +75,22 @@ export const getErrorMessage = (error: unknown): string => {
       return 'Accès refusé : votre session a expiré ou votre niveau de permission est insuffisant.';
     }
 
-    if (error.response?.status === 409) {
-      return 'Cet OT est verrouillé car un PDF est attaché.';
-    }
-
     const payload = error.response?.data as Record<string, unknown> | undefined;
     // Extract error or message, ensuring we always return a string
-    const raw = payload?.error ?? payload?.message ?? error.message;
+    const raw = payload?.error ?? payload?.message;
     if (typeof raw === 'string') return raw;
     if (raw && typeof raw === 'object') {
+      const message = (raw as Record<string, unknown>).message;
+      if (typeof message === 'string') return message;
       // Handle cases where message is an object (e.g. validation errors)
       try {
         return JSON.stringify(raw);
       } catch {
         return 'Erreur de validation du serveur';
       }
+    }
+    if (error.response?.status === 409) {
+      return 'Conflit : ces données existent déjà ou ne peuvent pas être modifiées dans leur état actuel.';
     }
     return error.message ?? 'Erreur serveur';
   }

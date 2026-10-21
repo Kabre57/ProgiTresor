@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import Upload from '@/components/ui/Upload';
 import { useToast } from '@/components/ui/Toast';
+import { downloadImportTemplate } from '@/lib/utils/importTemplates';
+import { isExcelFileName } from '@/lib/utils/excelFiles';
 import { getErrorMessage } from '@/lib/api/client';
 import { etudiantApi, type ReferentialEndpoint } from '@/lib/api/etudiantApi';
 
@@ -29,19 +31,19 @@ const ReferentialImportDialog = ({ isOpen, onClose, onImported, entity, title }:
   const getExpectedColumns = (entityName: ReferentialEndpoint) => {
     switch (entityName) {
       case 'promotions':
-        return 'nom, ordre, niveau';
+        return 'Nom, Ordre, Niveau';
       case 'antennes':
-        return 'code, nom, ville';
+        return 'Code, Nom, Ville';
       case 'filieres':
-        return 'code, libelle, abreviation';
+        return 'Code, Libellé, Abréviation';
       case 'statuts-etudiants':
-        return 'code, libelle';
+        return 'Code, Libellé';
       case 'types-flux':
-        return 'code, libelle';
+        return 'Code, Libellé';
       case 'types-recettes':
-        return 'code, libelle, typefluxcode';
+        return 'Code, Libellé, Flux (nom ou code métier)';
       case 'nomenclatures':
-        return 'codeproduit, libelle, typerecettecode, montant';
+        return 'Code produit, Libellé, Type de recette (libellé ou code métier), Montant ; Flux si nécessaire';
       default:
         return '';
     }
@@ -81,17 +83,32 @@ const ReferentialImportDialog = ({ isOpen, onClose, onImported, entity, title }:
     >
       <div className="space-y-4">
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Téléversez un fichier Excel (.xlsx, .xls) ou CSV avec les colonnes attendues : <strong className="text-gray-700 dark:text-gray-200">{getExpectedColumns(entity)}</strong>.
+          Téléversez un fichier Excel (.xlsx, .xls) avec les colonnes attendues : <strong className="text-gray-700 dark:text-gray-200">{getExpectedColumns(entity)}</strong>.
         </p>
 
+        <Button
+          type="button"
+          onClick={() => downloadImportTemplate(entity).catch(error => toast.error(getErrorMessage(error)))}
+        >
+          Télécharger le modèle Excel
+        </Button>
+
         <Upload
-          accept=".xlsx,.xls,.csv"
+          accept=".xlsx,.xls"
           draggable
           uploadLimit={1}
           fileList={uploadFile ? [uploadFile] : []}
-          onChange={(files) => setUploadFile(files[0] || null)}
+          onChange={(files) => {
+            const file = files[0];
+            if (file && !isExcelFileName(file.name)) {
+              setUploadFile(null);
+              toast.error('Sélectionnez un fichier Excel (.xlsx ou .xls).');
+              return;
+            }
+            setUploadFile(file || null);
+          }}
           onFileRemove={() => setUploadFile(null)}
-          tip={<div className="mt-2 text-xs text-gray-500">Fichiers Excel (.xlsx, .xls) ou CSV uniquement.</div>}
+          tip={<div className="mt-2 text-xs text-gray-500">Fichiers Excel (.xlsx, .xls) uniquement.</div>}
         />
 
         {importSummary && (

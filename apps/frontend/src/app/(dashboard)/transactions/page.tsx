@@ -22,7 +22,7 @@ import { DeleteConfirmationModal } from '@/components/transactions/DeleteConfirm
 import { TransactionFilters } from '@/components/transactions/TransactionFilters';
 import { TransactionKpiCards } from '@/components/transactions/TransactionKpiCards';
 
-type ExportFormat = 'csv' | 'xlsx' | 'xls';
+type ExportFormat = 'xlsx' | 'xls';
 
 function TransactionsContent() {
   const searchParams = useSearchParams();
@@ -240,7 +240,6 @@ function TransactionsContent() {
             >
               <Dropdown.Item onClick={() => handleExport('xlsx')}>Excel moderne (.xlsx)</Dropdown.Item>
               <Dropdown.Item onClick={() => handleExport('xls')}>Excel ancien (.xls)</Dropdown.Item>
-              <Dropdown.Item onClick={() => handleExport('csv')}>CSV (.csv)</Dropdown.Item>
             </Dropdown>
             <Button 
               variant="solid"

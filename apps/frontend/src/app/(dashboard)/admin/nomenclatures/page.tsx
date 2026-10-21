@@ -13,6 +13,7 @@ import {
   useDeleteReferential 
 } from '@/lib/hooks/useEtudiantQueries';
 import { formatCurrency } from '@/lib/utils/format';
+import { normalizeTypeFluxCode } from '@/lib/utils/typeFlux';
 import { PiPlusDuotone } from 'react-icons/pi';
 import { TbUpload } from 'react-icons/tb';
 import { Edit, Trash2 } from 'lucide-react';
@@ -45,13 +46,13 @@ export default function NomenclaturesPage() {
   // Filter nomenclatures into Budget and Hors Budget
   const budgetNomenclatures = useMemo(() => {
     return (nomenclaturesQuery.data ?? []).filter(
-      (item) => item.typeRecette?.typeFlux?.code === 'BUDGET'
+      (item) => normalizeTypeFluxCode(item.typeRecette?.typeFlux?.code) === 'BUDGET'
     );
   }, [nomenclaturesQuery.data]);
 
   const horsBudgetNomenclatures = useMemo(() => {
     return (nomenclaturesQuery.data ?? []).filter(
-      (item) => item.typeRecette?.typeFlux?.code === 'HORS_BUDGET'
+      (item) => normalizeTypeFluxCode(item.typeRecette?.typeFlux?.code) === 'HORS_BUDGET'
     );
   }, [nomenclaturesQuery.data]);
 

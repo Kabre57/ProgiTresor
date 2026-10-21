@@ -152,7 +152,10 @@ export const buildTransactionWhereClause = async (query: any): Promise<Prisma.Tr
     try {
       const etudiant = await fetchEtudiantJson<any[]>(`/?${params.toString()}`, undefined, []);
       if (Array.isArray(etudiant)) {
-        const etudiantIds = etudiant.map((s) => s.id);
+        const etudiantIds = etudiant
+          .filter((s) => !isPresent(etudiantMatricule) ||
+            String(s.matricule).trim().toUpperCase() === String(etudiantMatricule).trim().toUpperCase())
+          .map((s) => s.id);
         where.etudiantId = { in: etudiantIds };
       } else {
         where.etudiantId = { in: [] };

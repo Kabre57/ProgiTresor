@@ -31,6 +31,11 @@ export function Header({
   const isStudent = isStudentUser(user);
   const profileHref = isStudent ? '/etudiant/profile' : '/account/settings?tab=profile';
   const settingsHref = isStudent ? '/etudiant/security' : '/account/settings?tab=security';
+  const secondaryIdentity = user
+    ? isStudent && user.email.toLowerCase().endsWith('@comptes.invalid')
+      ? `Matricule : ${user.username}`
+      : user.email
+    : '';
 
   const notifRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
@@ -192,7 +197,7 @@ export function Header({
                     <div className="truncate text-xs font-bold text-slate-900 dark:text-white">
                       {user.prenom} {user.nom}
                     </div>
-                    <div className="truncate text-[10px] text-slate-400">{user.email}</div>
+                    <div className="truncate text-[10px] text-slate-400">{secondaryIdentity}</div>
                     <div className="mt-1">
                       <Tag tone="info" className="text-[9px] px-1.5 py-0.5">
                         {user.role.libelle ?? user.role.code}

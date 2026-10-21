@@ -24,7 +24,7 @@ export function SecurityTab({ etudiant }: SecurityTabProps) {
           <div className="rounded-lg border border-gray-200 p-4 dark:border-gray-700">
             <p className="text-sm font-semibold text-gray-900 dark:text-gray-50">Mot de passe</p>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              La modification du mot de passe doit etre raccordee au service d'authentification.
+              Votre identifiant et votre mot de passe sont votre matricule étudiant, saisi exactement comme sur votre fiche.
             </p>
           </div>
         </CardContent>

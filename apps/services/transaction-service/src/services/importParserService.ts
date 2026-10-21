@@ -6,18 +6,31 @@ export interface ParsedTransactionItem {
   montant: number;
   dateHeure: Date;
   typeFluxId?: number | null;
+  antenneId?: number | null;
+  nomenclatureId?: number | null;
+  nomenclature?: string | null;
+  matriculeTresorPay?: string | null;
   etudiantMatricule?: string | null;
   nomPayeurBrut?: string | null;
   contactPayeur?: string | null;
   libelleProduitBrut?: string | null;
-  filiere: string;
-  niveau: string;
+  filiere?: string | null;
+  niveau?: string | null;
   versement?: string | null;
   typeFrais?: string | null;
-  antenne: string;
-  typeRecette: string;
-  typeFlux: string;
+  antenne?: string | null;
+  typeRecette?: string | null;
+  typeFlux?: string | null;
 }
+
+const requiredFields: Array<{ field: keyof ParsedTransactionItem; label: string }> = [
+  { field: 'refTresor', label: 'reference' },
+  { field: 'dateHeure', label: 'date' },
+  { field: 'montant', label: 'montant' },
+  { field: 'etudiantMatricule', label: 'matricule' },
+  { field: 'nomPayeurBrut', label: 'payeur' },
+  { field: 'libelleProduitBrut', label: 'produit' },
+];
 
 export const normalizeFinancialLabel = (value: unknown): string => String(value ?? '')
   .trim()
@@ -42,6 +55,8 @@ const headerMap: Record<string, keyof ParsedTransactionItem> = {
   'matricule': 'etudiantMatricule',
   'matriculeetudiant': 'etudiantMatricule',
   'etudiantmatricule': 'etudiantMatricule',
+  'matricule tresor pay': 'matriculeTresorPay',
+  'matriculetresorpay': 'matriculeTresorPay',
   'payeur': 'nomPayeurBrut',
   'nom payeur': 'nomPayeurBrut',
   'nompayeurbrut': 'nomPayeurBrut',
@@ -53,6 +68,9 @@ const headerMap: Record<string, keyof ParsedTransactionItem> = {
   'produit': 'libelleProduitBrut',
   'libelleproduitbrut': 'libelleProduitBrut',
   'libelle_produit_brut': 'libelleProduitBrut',
+  'nomenclature': 'nomenclature',
+  'libelle nomenclature': 'nomenclature',
+  'designation': 'libelleProduitBrut',
   'type_flux_id': 'typeFluxId',
   'typefluxid': 'typeFluxId',
   'filiere': 'filiere',
@@ -66,9 +84,12 @@ const headerMap: Record<string, keyof ParsedTransactionItem> = {
   'antenne id': 'antenne',
   'antenne_id': 'antenne',
   'type recette': 'typeRecette',
+  'type de recette': 'typeRecette',
   'type_recette': 'typeRecette',
   'typerecette': 'typeRecette',
   'type flux': 'typeFlux',
+  'type de flux': 'typeFlux',
+  'flux': 'typeFlux',
   'type_flux': 'typeFlux',
   'typeflux': 'typeFlux',
 };
@@ -97,8 +118,14 @@ const cleanStringValue = (value: unknown): string | null => {
  * Parse une date de manière flexible (supporte ISO et DD/MM/YYYY HH:mm:ss).
  */
 const parseFlexibleDate = (value: unknown): Date => {
-  if (value instanceof Date) return value;
-  if (!value) return new Date();
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? new Date(NaN) : value;
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    const date = XLSX.SSF.parse_date_code(value);
+    return date
+      ? new Date(date.y, date.m - 1, date.d, date.H, date.M, date.S)
+      : new Date(NaN);
+  }
+  if (value === undefined || value === null || String(value).trim() === '') return new Date(NaN);
 
   const str = String(value).trim();
   const d = new Date(str);
@@ -114,16 +141,10 @@ const parseFlexibleDate = (value: unknown): Date => {
     const sec = match[6] ? parseInt(match[6], 10) : 0;
 
     const parsedDate = new Date(year, month, day, hour, min, sec);
-    if (!isNaN(parsedDate.getTime())) {
-      return parsedDate;
-    }
+    if (parsedDate.getFullYear() === year && parsedDate.getMonth() === month && parsedDate.getDate() === day) return parsedDate;
   }
 
   return new Date(NaN);
-};
-
-export const parseCSVBuffer = (buffer: Buffer): ParsedTransactionItem[] => {
-  return parseXLSXBuffer(buffer);
 };
 
 /**
@@ -138,10 +159,20 @@ export const parseXLSXBuffer = (buffer: Buffer): ParsedTransactionItem[] => {
 
   const sheet = workbook.Sheets[sheetName];
   const jsonData = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: '' });
+  if (jsonData.length === 0) {
+    throw new AppError(400, 'Le fichier ne contient aucune transaction à importer.');
+  }
+
+  const availableFields = new Set(Object.keys(jsonData[0]).map(key => headerMap[normalizeHeader(key)]).filter(Boolean));
+  const missingHeaders = requiredFields.filter(({ field }) => !availableFields.has(field)).map(({ label }) => label);
+  if (missingHeaders.length > 0) {
+    throw new AppError(400, `Colonnes requises manquantes : ${missingHeaders.join(', ')}. Modèle attendu : reference, date, montant, matricule, payeur, produit.`);
+  }
 
   const items: ParsedTransactionItem[] = [];
+  const rowErrors: string[] = [];
 
-  for (const row of jsonData) {
+  for (const [rowIndex, row] of jsonData.entries()) {
     const item: Partial<ParsedTransactionItem> = {};
 
     for (const key of Object.keys(row)) {
@@ -152,7 +183,10 @@ export const parseXLSXBuffer = (buffer: Buffer): ParsedTransactionItem[] => {
       const rawVal = row[key];
 
       if (mappedKey === 'montant') {
-        item.montant = Number(rawVal) || 0;
+        const normalizedAmount = typeof rawVal === 'string'
+          ? rawVal.trim().replace(/[\s\u00a0\u202f]/g, '').replace(',', '.')
+          : rawVal;
+        item.montant = Number(normalizedAmount);
       } else if (mappedKey === 'typeFluxId') {
         item.typeFluxId = Number(rawVal) || null;
       } else if (mappedKey === 'dateHeure') {
@@ -164,9 +198,28 @@ export const parseXLSXBuffer = (buffer: Buffer): ParsedTransactionItem[] => {
       }
     }
 
-    if (item.refTresor && item.montant !== undefined && item.dateHeure) {
-      items.push(item as ParsedTransactionItem);
+    const rowNumber = rowIndex + 2;
+    const rowMissing = requiredFields
+      .filter(({ field }) => {
+        const value = item[field];
+        if (field === 'dateHeure') return !(value instanceof Date) || Number.isNaN(value.getTime());
+        if (field === 'montant') return typeof value !== 'number' || !Number.isSafeInteger(value) || value <= 0;
+        return typeof value !== 'string' || value.trim() === '';
+      })
+      .map(({ label }) => label);
+
+    if (rowMissing.length > 0) {
+      rowErrors.push(`Ligne ${rowNumber} : ${rowMissing.join(', ')} ${rowMissing.length === 1 ? 'manquant ou invalide' : 'manquants ou invalides'}.`);
+      continue;
     }
+
+    items.push(item as ParsedTransactionItem);
+  }
+
+  if (rowErrors.length > 0) {
+    const details = rowErrors.slice(0, 10).join(' ');
+    const remaining = rowErrors.length > 10 ? ` ${rowErrors.length - 10} autre(s) ligne(s) invalide(s).` : '';
+    throw new AppError(400, `${details}${remaining}`);
   }
 
   return items;
@@ -177,11 +230,9 @@ export const parseXLSXBuffer = (buffer: Buffer): ParsedTransactionItem[] => {
  */
 export const parseImportFile = (
   buffer: Buffer,
-  typeFichier: 'CSV' | 'XLSX'
+  typeFichier: 'XLSX'
 ): ParsedTransactionItem[] => {
-  if (typeFichier === 'CSV') {
-    return parseCSVBuffer(buffer);
-  } else if (typeFichier === 'XLSX') {
+  if (typeFichier === 'XLSX') {
     return parseXLSXBuffer(buffer);
   }
   throw new AppError(400, `Type de fichier non supporté pour le traitement : ${typeFichier}`);

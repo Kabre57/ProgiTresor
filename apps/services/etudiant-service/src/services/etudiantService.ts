@@ -4,6 +4,7 @@ import redisClient from '../utils/redis';
 import { NotFoundError, ConflictError, ValidationError } from '../utils/errors';
 import { redisCacheHits, redisCacheMisses } from '../utils/metrics';
 import logger from '../utils/logger';
+import { fetchStudentPayments } from './studentPaymentsService';
 
 const CACHE_TTL = 600;
 
@@ -594,29 +595,17 @@ export const getEtudiantStatsGroups = async () => {
   return await etudiantRepository.countEtudiantsByGroups();
 };
 
-export const getStudentFinancialSummary = async (identifier: string) => {
+export const getStudentFinancialSummary = async (identifier: string, matriculeOnly = false) => {
   const prismaInstance = etudiantRepository.getPrismaClient();
-  let student;
-  const id = parseInt(identifier, 10);
-  if (!isNaN(id)) {
+  const include = { antenne: true, filiere: true, statut: true, promotion: true };
+  let student = await prismaInstance.etudiant.findUnique({
+    where: { matricule: identifier }, include,
+  });
+  const id = /^\d+$/.test(identifier) ? Number(identifier) : NaN;
+  if (!student && !matriculeOnly && Number.isSafeInteger(id)) {
     student = await prismaInstance.etudiant.findUnique({
       where: { id },
-      include: {
-        antenne: true,
-        filiere: true,
-        statut: true,
-        promotion: true
-      }
-    });
-  } else {
-    student = await prismaInstance.etudiant.findUnique({
-      where: { matricule: identifier },
-      include: {
-        antenne: true,
-        filiere: true,
-        statut: true,
-        promotion: true
-      }
+      include,
     });
   }
 
@@ -635,20 +624,10 @@ export const getStudentFinancialSummary = async (identifier: string) => {
   });
   const applicableNomenclatures = studentWithNomenclatures?.nomenclatures || [];
 
-  const montantTotalAttendu = applicableNomenclatures.reduce((sum: number, item: any) => sum + item.montant, 0);
+  const montantTotalAttendu = applicableNomenclatures.reduce((sum: number, item: any) => sum + Number(item.montant), 0);
 
   // Fetch CLASSE transactions from transaction-service
-  const transactionServiceUrl = process.env.TRANSACTION_SERVICE_URL || 'http://transaction-service:5003';
-  const res = await fetch(`${transactionServiceUrl}/?etudiantId=${student.id}&statutTraitement=CLASSE&limit=1000`, {
-    headers: {
-      'x-internal-secret': process.env.INTERNAL_API_SECRET || '',
-    }
-  });
-  if (!res.ok) {
-    throw new Error(`Failed to fetch transactions from transaction-service: ${res.statusText}`);
-  }
-  const data = (await res.json()) as { list?: any[] };
-  const transactions = data.list || [];
+  const transactions = await fetchStudentPayments(student.id);
   const montantTotalPaye = transactions.reduce((sum: number, tx: any) => sum + Number(tx.montant), 0);
 
   const soldeRestant = Math.max(0, montantTotalAttendu - montantTotalPaye);
@@ -673,8 +652,8 @@ export const getStudentFinancialSummary = async (identifier: string) => {
   };
 };
 
-export const generateStudentAttestation = async (identifier: string): Promise<Buffer> => {
-  const summary = await getStudentFinancialSummary(identifier);
+export const generateStudentAttestation = async (identifier: string, matriculeOnly = false): Promise<Buffer> => {
+  const summary = await getStudentFinancialSummary(identifier, matriculeOnly);
   if (!summary.isSolded) {
     const formattedSolde = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(summary.soldeRestant).replace(/[\u202f\u00a0]/g, ' ');
     throw new ValidationError(`Solde restant à régler : ${formattedSolde} FCFA. L'attestation ne peut être générée qu'après le règlement complet.`);

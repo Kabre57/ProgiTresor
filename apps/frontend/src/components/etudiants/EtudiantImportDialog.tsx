@@ -5,6 +5,8 @@ import Button from '@/components/ui/Button';
 import Dialog from '@/components/ui/Dialog';
 import Upload from '@/components/ui/Upload';
 import { useToast } from '@/components/ui/Toast';
+import { downloadImportTemplate } from '@/lib/utils/importTemplates';
+import { isExcelFileName } from '@/lib/utils/excelFiles';
 import { getErrorMessage } from '@/lib/api/client';
 import { etudiantApi } from '@/lib/api/etudiantApi';
 
@@ -60,18 +62,34 @@ const EtudiantImportDialog = ({ isOpen, onClose, onImported }: EtudiantImportDia
     >
       <div className="space-y-4">
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Téléversez un fichier CSV avec les colonnes attendues : matricule, nom, prenom, antenneId,
-          promotionNom ou promotionId, filiereId, statutId et matriculeTresorPay.
+          Téléversez un fichier Excel avec les colonnes Matricule, Nom, Prénom, Antenne, Filière, Statut et Promotion.
+          Utilisez les noms ou codes métier des référentiels. Précisez le Niveau si plusieurs promotions portent le même nom.
+          Le Matricule Trésor Pay est facultatif.
         </p>
 
+        <Button
+          type="button"
+          onClick={() => downloadImportTemplate('etudiants').catch(error => toast.error(getErrorMessage(error)))}
+        >
+          Télécharger le modèle Excel
+        </Button>
+
         <Upload
-          accept=".xlsx,.xls,.csv"
+          accept=".xlsx,.xls"
           draggable
           uploadLimit={1}
           fileList={uploadFile ? [uploadFile] : []}
-          onChange={(files) => setUploadFile(files[0] || null)}
+          onChange={(files) => {
+            const file = files[0];
+            if (file && !isExcelFileName(file.name)) {
+              setUploadFile(null);
+              toast.error('Sélectionnez un fichier Excel (.xlsx ou .xls).');
+              return;
+            }
+            setUploadFile(file || null);
+          }}
           onFileRemove={() => setUploadFile(null)}
-          tip={<div className="mt-2 text-xs text-gray-500">Fichiers Excel (.xlsx, .xls) ou CSV uniquement.</div>}
+          tip={<div className="mt-2 text-xs text-gray-500">Fichiers Excel (.xlsx, .xls) uniquement.</div>}
         />
 
         {importSummary && (
